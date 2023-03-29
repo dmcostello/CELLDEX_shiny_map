@@ -3,6 +3,7 @@
 library(shiny)
 library(leaflet)
 Csites <- readRDS('./data/field.rds')
+Csites$part.stream <- with(Csites, paste(partnerid,stream))
 
 #### --- USER INTERFACE --- ####
 
@@ -70,7 +71,7 @@ server <- function(input, output) {
     
     leafletProxy("map", data = Csites) %>%
       clearShapes() %>%
-      addCircleMarkers(~longitude, ~latitude, layerId=~partnerid,radius=radset,color=fillset)
+      addCircleMarkers(~longitude, ~latitude, layerId=~part.stream,radius=radset,color=fillset)
   })
   
 }
