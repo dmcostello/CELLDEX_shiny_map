@@ -10,3 +10,9 @@ colnames(k)[2] <- "part.str"
 str_k <- merge(k,field[,c('biome_short','part.str','latitude','longitude')],by="part.str")
 
 saveRDS(str_k,file="./data/CELLDEX.rds")
+
+
+#Terminal code for pruning
+
+#git fetch -p
+#git branch -d branchname
