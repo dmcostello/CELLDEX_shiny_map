@@ -27,6 +27,7 @@ pal <- colorNumeric(
 pal_ln <- colorNumeric(
   palette = "YlGn",
   domain = values(ln_skd),
+  
   reverse=T
 )
 
