@@ -56,7 +56,9 @@ ui <- navbarPage("CELLDEX",id="nav",
                               radioButtons("sites",label="Show sites",
                                            choices=list("None","Cotton","Leaf litter","Both"),
                                            selected = "Cotton",
-                                           )
+                                           ),
+                              textOutput("click_kd"),
+                              textOutput("kd")
                             )
                           )
           ),
@@ -82,20 +84,27 @@ server <- function(input, output) {
                        color = "#1b9e77",
                        radius = 3, popup = ~as.character(cntnt),
                        stroke = FALSE, fillOpacity = 0.3) %>%
-      addGeoRaster(skd,autozoom=F,
+      addGeoRaster(skd,autozoom=F,layerId = 'rkd',
                    colorOptions = colorOptions(palette="YlGn"),resolution = 2^8) %>% 
       addLegend("bottomright", pal = pal, values = values(skd),
                 title = "k (1/d)",opacity = 1) %>%
-      leafem::addImageQuery(skd[[1]],
-                           layerId = 'skd',
-                           type='click',
-                           digits=2,
-                           prefix='Raster Value') %>%
     setView(lng = -81.36, lat = 41.15, zoom = 6)
   })
   
   output$test1 <- renderPlot({summary(fgbm,n.trees=best.iter2)
   })
+
+  output$click_kd <- renderText({(paste("You clicked: Latitude",
+                                        round(input$map_click$lat,digits=3),
+                                        "; Longitude",round(input$map_click$lng,digits=3)))})
+
+output$kd <- renderText({paste("Predicted cotton kd = ",
+                   round(
+                     raster::extract(x=skd,
+                                     y=data.frame(long=input$map_click$lng,lat=input$map_click$lat))
+                   ,digits=3)
+)
+})
 
 }
 
