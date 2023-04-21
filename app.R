@@ -8,6 +8,7 @@ library(leaflet)
 library(leafem)
 library(dplyr)
 library(gbm)
+library(raster)
 
 #Read in data
 Csites <- readRDS('./data/CELLDEX.rds')
@@ -85,6 +86,11 @@ server <- function(input, output) {
                    colorOptions = colorOptions(palette="YlGn"),resolution = 2^8) %>% 
       addLegend("bottomright", pal = pal, values = values(skd),
                 title = "k (1/d)",opacity = 1) %>%
+      leafem::addImageQuery(skd[[1]],
+                           layerId = 'skd',
+                           type='click',
+                           digits=2,
+                           prefix='Raster Value') %>%
     setView(lng = -81.36, lat = 41.15, zoom = 6)
   })
   
