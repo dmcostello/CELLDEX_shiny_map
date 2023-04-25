@@ -57,7 +57,14 @@ ui <- navbarPage("CELLDEX",id="nav",
                                            choices=list("None","Cotton","Leaf litter","Both"),
                                            selected = "Cotton",
                                            ),
-                              textOutput("click_kd"),
+                              br(),
+                              h4("Map center:"),
+                              numericInput("lat_in",label = "Latitude",min=-90,max=90,value=41.15),
+                              numericInput("lng_in",label = "Longitude",min=-180,max=180,value=-81.36),
+                              br(),
+                              h4("You clicked:"),
+                              textOutput("click_lat"),
+                              textOutput("click_lng"),
                               textOutput("kd")
                             )
                           )
@@ -74,7 +81,7 @@ ui <- navbarPage("CELLDEX",id="nav",
 #### --- SERVER LOGIC --- ####
 
 server <- function(input, output) {
-  
+    
   
   output$map <- renderLeaflet({
     leaflet(Csites) %>% 
@@ -88,16 +95,20 @@ server <- function(input, output) {
                    colorOptions = colorOptions(palette="YlGn"),resolution = 2^8) %>% 
       addLegend("bottomright", pal = pal, values = values(skd),
                 title = "k (1/d)",opacity = 1) %>%
-    setView(lng = -81.36, lat = 41.15, zoom = 6)
+    setView(lng = input$lng_in, lat = input$lat_in, zoom = 6)
   })
   
   output$test1 <- renderPlot({summary(fgbm,n.trees=best.iter2)
   })
+  
 
-  output$click_kd <- renderText({(paste("You clicked: Latitude",
-                                        round(input$map_click$lat,digits=3),
-                                        "; Longitude",round(input$map_click$lng,digits=3)))})
-
+  output$click_lat <- renderText({paste("Latitude: ",
+                                        round(input$map_click$lat,digits=3))})
+  output$click_lng <- renderText({paste("Longitude: ",
+                                        round(input$map_click$lng,digits=3))})
+  
+  #updateNumericInput(inputID="lat_in",value=input$map_click$lat)
+  
 output$kd <- renderText({paste("Predicted cotton kd = ",
                    round(
                      raster::extract(x=skd,
