@@ -113,18 +113,18 @@ server <- function(input, output, session) {
   })
   
 
-  output$click_lat <- renderText({paste("Latitude: ",
-                                        round(input$map_click$lat,digits=3))})
-  output$click_lng <- renderText({paste("Longitude: ",
-                                        round(input$map_click$lng,digits=3))})
+  output$click_lat <- renderText({paste("Latitude: ",ifelse(is.null(input$map_click$lat),"N/A",
+                                        round(input$map_click$lat,digits=3)))})
+  output$click_lng <- renderText({paste("Longitude: ",ifelse(is.null(input$map_click$lat),"N/A",
+                                        round(input$map_click$lng,digits=3)))})
   
   #updateNumericInput(inputID="lat_in",value=input$map_click$lat)
   
 output$kd <- renderText({paste("Predicted cotton kd = ",
-                   round(
+                               ifelse(is.null(input$map_click$lat),"N/A",round(
                      raster::extract(x=skd,
                                      y=data.frame(long=input$map_click$lng,lat=input$map_click$lat))
-                   ,digits=3)
+                   ,digits=3))
 )
 })
 
