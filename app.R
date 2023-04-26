@@ -56,7 +56,16 @@ ui <- navbarPage("CELLDEX",id="nav",
                               radioButtons("sites",label="Show sites",
                                            choices=list("None","Cotton","Leaf litter","Both"),
                                            selected = "Cotton",
-                                           )
+                                           ),
+                              br(),
+                              h4("Map center:"),
+                              numericInput("lat_in",label = "Latitude",min=-90,max=90,value=41.15),
+                              numericInput("lng_in",label = "Longitude",min=-180,max=180,value=-81.36),
+                              br(),
+                              h4("You clicked:"),
+                              textOutput("click_lat"),
+                              textOutput("click_lng"),
+                              textOutput("kd")
                             )
                           )
           ),
@@ -71,31 +80,53 @@ ui <- navbarPage("CELLDEX",id="nav",
 
 #### --- SERVER LOGIC --- ####
 
-server <- function(input, output) {
-  
+server <- function(input, output, session) {
+    
   
   output$map <- renderLeaflet({
     leaflet(Csites) %>% 
-      addCircles(lng = ~longitude, lat = ~latitude) %>% 
       addProviderTiles(providers$Esri.WorldTopoMap) %>%
-      addCircleMarkers(data = Csites, lat =  ~latitude, lng =~longitude,
-                       color = "#1b9e77",
-                       radius = 3, popup = ~as.character(cntnt),
-                       stroke = FALSE, fillOpacity = 0.3) %>%
-      addGeoRaster(skd,autozoom=F,
+      #addCircleMarkers(data = Csites, lat =  ~latitude, lng =~longitude,
+      #                 color = "#1b9e77",
+      #                 radius = 3, popup = ~as.character(cntnt),
+      #                 stroke = FALSE, fillOpacity = 0.8) %>%
+      addGeoRaster(skd,autozoom=F,layerId = 'rkd',
                    colorOptions = colorOptions(palette="YlGn"),resolution = 2^8) %>% 
       addLegend("bottomright", pal = pal, values = values(skd),
                 title = "k (1/d)",opacity = 1) %>%
-      leafem::addImageQuery(skd[[1]],
-                           layerId = 'skd',
-                           type='click',
-                           digits=2,
-                           prefix='Raster Value') %>%
-    setView(lng = -81.36, lat = 41.15, zoom = 6)
+    setView(lng = input$lng_in, lat = input$lat_in, zoom = 6)
+  })
+  
+  observe({proxy <- leafletProxy("map")
+  if(input$sites=="Cotton")
+  {proxy %>% addCircleMarkers(data = Csites, lat =  ~latitude, lng =~longitude,
+                              color = "#1b9e77",
+                              radius = 3, popup = ~as.character(cntnt),
+                              stroke = FALSE, fillOpacity = 0.8)
+  }
+  if(input$sites=="None")
+  {proxy %>% clearMarkers()}
+  
   })
   
   output$test1 <- renderPlot({summary(fgbm,n.trees=best.iter2)
   })
+  
+
+  output$click_lat <- renderText({paste("Latitude: ",ifelse(is.null(input$map_click$lat),"N/A",
+                                        round(input$map_click$lat,digits=3)))})
+  output$click_lng <- renderText({paste("Longitude: ",ifelse(is.null(input$map_click$lat),"N/A",
+                                        round(input$map_click$lng,digits=3)))})
+  
+  #updateNumericInput(inputID="lat_in",value=input$map_click$lat)
+  
+output$kd <- renderText({paste("Predicted cotton kd = ",
+                               ifelse(is.null(input$map_click$lat),"N/A",round(
+                     raster::extract(x=skd,
+                                     y=data.frame(long=input$map_click$lng,lat=input$map_click$lat))
+                   ,digits=3))
+)
+})
 
 }
 
