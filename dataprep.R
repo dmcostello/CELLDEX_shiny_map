@@ -62,3 +62,16 @@ pal <- colorNumeric(
 saveRDS(traits,"traits.rds")
  
 saveRDS(CPdat,"FSdat.rds")
+
+#TESTING MODEL PREDICTION
+#Load models
+load("FSmodel.rda")  
+
+best.iter2 <- gbm.perf(fgbm,method="cv")
+
+#Create a datasheet with the variables
+acerdat <- traits[traits$Genus=="Acer",]
+conddat <- data.frame(mesh.size.category=1,Leaf.condition=1)
+kd <- data.frame(ln_pred_k=4)
+acerdat2 <- cbind(acerdat,conddat,kd)
+pred1<-predict(fgbm, newdata=acerdat2, n.trees=best.iter2)

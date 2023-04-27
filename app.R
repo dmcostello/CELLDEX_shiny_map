@@ -20,22 +20,18 @@ skd<-readRDS('./data/skd.rds')
 ln_skd <- readRDS('./data/ln_skd.rds')
 
 #Read in the Follstad-Shah 2017 data
-FSsites <- readRDS("FSdat.rds")
+FSsites <- readRDS("./data/FSdat.rds")
 FSsites <- mutate(FSsites, cntnt=paste0('<strong>Genus: </strong>',Genus,
                                       '<br><strong>Leaf condition:</strong> ', Leaf.condition,
                                       '<br><strong>Decay rate (1/d):</strong> ', round(kd,digits=3))) 
+
+#Read in TRY trait data
+traits <- readRDS("./data/traits.rds")
 
 #Color pallette
 pal <- colorNumeric(
   palette = "YlGn",
   domain = values(skd)
-)
-
-pal_ln <- colorNumeric(
-  palette = "YlGn",
-  domain = values(ln_skd),
-  
-  reverse=T
 )
 
 #Load models
@@ -51,23 +47,30 @@ ui <- navbarPage("CELLDEX",id="nav",
                             mainPanel("",
                             leafletOutput("map",width=600, height=800)),
                             sidebarPanel(
-                              h2("Stream decomp"),
                               
-                              radioButtons("type",label="Show decomposition rate of",
-                                           choices = list("Cotton","Leaf litter")),
-                              conditionalPanel("input.type == 'Leaf litter'",
-                                               # Only prompt for litter type when selecting litter
-                                               selectInput("leaf",label="Leaf genus",choices=list(
-                                                 "Oak","Maple"))),
-                              radioButtons("sites",label="Show sites",
-                                           choices=list("None","Cotton","Leaf litter","Both"),
-                                           selected = "Cotton",
-                                           ),
-                              br(),
-                              h4("Map center:"),
+                              h3("Where do you want to go?"),
                               numericInput("lat_in",label = "Latitude",min=-90,max=90,value=41.15),
                               numericInput("lng_in",label = "Longitude",min=-180,max=180,value=-81.36),
                               br(),
+                              
+                              h3("Show sites with decomp data"),
+                              radioButtons("sites",label="",
+                                           choices=list("None","Cotton","Leaf litter","Both"),
+                                           selected = "Cotton",
+                              ),
+                              
+                              br(),
+                              h3("Click the map to predict decomp"),
+                              
+                              radioButtons("type",label="Predict decomposition rate of",
+                                           choices = list("Cotton","Leaf litter")),
+                              conditionalPanel("input.type == 'Leaf litter'",
+                                               # Only prompt for litter type when selecting litter
+                                               selectInput("leaf",label="Leaf genus",choices=as.list(
+                                                 traits$Genus))),
+                              
+                              br(),
+                              
                               h4("You clicked:"),
                               textOutput("click_lat"),
                               textOutput("click_lng"),
