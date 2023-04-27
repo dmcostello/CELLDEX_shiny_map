@@ -54,4 +54,10 @@ pal <- colorNumeric(
  coord<- data.frame(long=c(-84.9),lat=c(42.77))
  raster::extract(x=skd,y=coord)
  
-                 
+
+ #AGGREGATE TRAITS
+ CPdat <- read.csv("./data/AnalysisData_landcat_nocastaneav2.csv")
+ traits<-aggregate(CPdat[,13:33],by=list(CPdat$Genus),mean)
+ names(traits)[1] <- "Genus"
+ write.csv(traits,"traits.csv")
+ 
