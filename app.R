@@ -86,14 +86,10 @@ server <- function(input, output, session) {
   output$map <- renderLeaflet({
     leaflet(Csites) %>% 
       addProviderTiles(providers$Esri.WorldTopoMap) %>%
-      #addCircleMarkers(data = Csites, lat =  ~latitude, lng =~longitude,
-      #                 color = "#1b9e77",
-      #                 radius = 3, popup = ~as.character(cntnt),
-      #                 stroke = FALSE, fillOpacity = 0.8) %>%
       addGeoRaster(skd,autozoom=F,layerId = 'rkd',
-                   colorOptions = colorOptions(palette="YlGn"),resolution = 2^8) %>% 
+                   colorOptions = colorOptions(palette="YlGn"),opacity = 0.65) %>% 
       addLegend("bottomright", pal = pal, values = values(skd),
-                title = "k (1/d)",opacity = 1) %>%
+                title = "k (1/d)",opacity = 0.65) %>%
     setView(lng = input$lng_in, lat = input$lat_in, zoom = 6)
   })
   
