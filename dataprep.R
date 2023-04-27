@@ -59,5 +59,6 @@ pal <- colorNumeric(
  CPdat <- read.csv("./data/AnalysisData_landcat_nocastaneav2.csv")
  traits<-aggregate(CPdat[,13:33],by=list(CPdat$Genus),mean)
  names(traits)[1] <- "Genus"
- write.csv(traits,"traits.csv")
+saveRDS(traits,"traits.rds")
  
+saveRDS(CPdat,"FSdat.rds")

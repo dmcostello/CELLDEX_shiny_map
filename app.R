@@ -10,7 +10,7 @@ library(dplyr)
 library(gbm)
 library(raster)
 
-#Read in data
+#Read in CELLDEX data
 Csites <- readRDS('./data/CELLDEX.rds')
   #Creates the html strings for map click
 Csites <- mutate(Csites, cntnt=paste0('<strong>Site code: </strong>',part.str,
@@ -18,6 +18,12 @@ Csites <- mutate(Csites, cntnt=paste0('<strong>Site code: </strong>',part.str,
                                       '<br><strong>Decay rate (1/d):</strong> ', round(k,digits=3))) 
 skd<-readRDS('./data/skd.rds')
 ln_skd <- readRDS('./data/ln_skd.rds')
+
+#Read in the Follstad-Shah 2017 data
+FSsites <- readRDS("FSdat.rds")
+FSsites <- mutate(FSsites, cntnt=paste0('<strong>Genus: </strong>',Genus,
+                                      '<br><strong>Leaf condition:</strong> ', Leaf.condition,
+                                      '<br><strong>Decay rate (1/d):</strong> ', round(kd,digits=3))) 
 
 #Color pallette
 pal <- colorNumeric(
@@ -82,7 +88,7 @@ ui <- navbarPage("CELLDEX",id="nav",
 
 server <- function(input, output, session) {
     
-  
+  #Fixed map
   output$map <- renderLeaflet({
     leaflet(Csites) %>% 
       addProviderTiles(providers$Esri.WorldTopoMap) %>%
@@ -90,12 +96,15 @@ server <- function(input, output, session) {
                    colorOptions = colorOptions(palette="YlGn"),opacity = 0.65) %>% 
       addLegend("bottomright", pal = pal, values = values(skd),
                 title = "k (1/d)",opacity = 0.65) %>%
-    setView(lng = input$lng_in, lat = input$lat_in, zoom = 6)
+    setView(lng = input$lng_in, lat = input$lat_in, zoom = 6) %>% 
+      setMaxBounds(~-180, ~-75, ~180, ~75)
   })
   
+  #Turn on and off points where decay was measured
   observe({proxy <- leafletProxy("map")
   if(input$sites=="Cotton")
-  {proxy %>% addCircleMarkers(data = Csites, lat =  ~latitude, lng =~longitude,
+  {proxy %>% clearMarkers()
+    proxy %>% addCircleMarkers(data = Csites, lat =  ~latitude, lng =~longitude,
                               color = "#1b9e77",
                               radius = 3, popup = ~as.character(cntnt),
                               stroke = FALSE, fillOpacity = 0.8)
@@ -103,12 +112,32 @@ server <- function(input, output, session) {
   if(input$sites=="None")
   {proxy %>% clearMarkers()}
   
+  if(input$sites=="Leaf litter")
+  {proxy %>% clearMarkers()
+    proxy %>% addCircleMarkers(data = FSsites, lat =  ~Latitude.2, lng =~Longitude.2,
+                              color = "firebrick",
+                              radius = 3, popup = ~as.character(cntnt),
+                              stroke = FALSE, fillOpacity = 0.8)
+    }
+  if(input$sites=="Both")
+  {proxy %>% clearMarkers()
+    proxy %>% addCircleMarkers(data = Csites, lat =  ~latitude, lng =~longitude,
+                               color = "#1b9e77",
+                               radius = 3, popup = ~as.character(cntnt),
+                               stroke = FALSE, fillOpacity = 0.8)
+    proxy %>% addCircleMarkers(data = FSsites, lat =  ~Latitude.2, lng =~Longitude.2,
+                               color = "firebrick",
+                               radius = 3, popup = ~as.character(cntnt),
+                               stroke = FALSE, fillOpacity = 0.8)
+  }
+  
   })
   
   output$test1 <- renderPlot({summary(fgbm,n.trees=best.iter2)
   })
   
 
+  #Output from rasters
   output$click_lat <- renderText({paste("Latitude: ",ifelse(is.null(input$map_click$lat),"N/A",
                                         round(input$map_click$lat,digits=3)))})
   output$click_lng <- renderText({paste("Longitude: ",ifelse(is.null(input$map_click$lat),"N/A",
