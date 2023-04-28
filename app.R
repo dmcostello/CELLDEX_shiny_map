@@ -7,6 +7,7 @@ library(leafem)
 library(dplyr)
 library(gbm)
 library(raster)
+library(stars)
 
 #Read in CELLDEX data
 Csites <- readRDS('./data/CELLDEX.rds')

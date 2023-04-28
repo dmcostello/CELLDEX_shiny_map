@@ -83,6 +83,6 @@ pred1<-predict(fgbm, newdata=acerdat2, n.trees=best.iter2)
 
 #Run app online
 library(rsconnect)
-rsconnect::deployApp('~/Library/CloudStorage/OneDrive-KentStateUniversity/Research projects/2020 CELLDEX spatial analysis/Shiny map/')
+rsconnect::deployApp('~/Library/CloudStorage/OneDrive-KentStateUniversity/Research projects/2020 CELLDEX spatial analysis/CELLDEX map/')
   
 
