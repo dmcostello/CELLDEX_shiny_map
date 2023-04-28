@@ -1,3 +1,7 @@
+#Adapted from SuperZip example https://shiny.rstudio.com/gallery/superzip-example.html
+#https://github.com/rstudio/shiny-examples/tree/main/063-superzip-example
+
+
 library(shiny)
 library(leafem)
 
@@ -54,4 +58,31 @@ pal <- colorNumeric(
  coord<- data.frame(long=c(-84.9),lat=c(42.77))
  raster::extract(x=skd,y=coord)
  
-                 
+
+ #AGGREGATE TRAITS
+ CPdat <- read.csv("./data/AnalysisData_landcat_nocastaneav2.csv")
+ traits<-aggregate(CPdat[,13:33],by=list(CPdat$Genus),mean)
+ names(traits)[1] <- "Genus"
+saveRDS(traits,"traits.rds")
+ 
+saveRDS(CPdat,"FSdat.rds")
+
+#TESTING MODEL PREDICTION
+#Load models
+load("FSmodel.rda")  
+
+best.iter2 <- gbm.perf(fgbm,method="cv")
+
+#Create a datasheet with the variables
+acerdat <- traits[traits$Genus=="Acer",]
+conddat <- data.frame(mesh.size.category=1,Leaf.condition=1)
+kd <- data.frame(ln_pred_k=4)
+acerdat2 <- cbind(acerdat,conddat,kd)
+pred1<-predict(fgbm, newdata=acerdat2, n.trees=best.iter2)
+
+
+#Run app online
+library(rsconnect)
+rsconnect::deployApp('~/Library/CloudStorage/OneDrive-KentStateUniversity/Research projects/2020 CELLDEX spatial analysis/Shiny map/')
+  
+
