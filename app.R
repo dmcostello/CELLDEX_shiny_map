@@ -1,7 +1,5 @@
 #### --- GLOBAL --- ####
 
-#Adapted from SuperZip example https://shiny.rstudio.com/gallery/superzip-example.html
-#https://github.com/rstudio/shiny-examples/tree/main/063-superzip-example
 
 library(shiny)
 library(leaflet)
@@ -172,28 +170,10 @@ server <- function(input, output, session) {
     }   
   })
   
-  
-  #output$leaftrait  <- renderTable({
-    
-    #cbind(traits[traits$Genus==input$leaf,],conddat,data.frame(lk_pred_k=log(click_ck)))
-    
-  #})
-  
-  
-#output$kd <- renderText({paste("Predicted cotton kd = ",
-#                               ifelse(is.null(input$map_click$lat),"N/A",deparse(traitIn[1]))
-#)
-#})
-
 }
-
-#paste("Predicted cotton kd = ",
- #     ifelse(is.null(input$map_click$lat),"N/A",round(
-#        raster::extract(x=skd,
-#                        y=data.frame(long=input$map_click$lng,lat=input$map_click$lat))
-#        ,digits=3))
-#)
 # Run the application 
-shinyApp(ui = ui, server = server,options=list(display.mode = "showcase"))
+shinyApp(ui = ui, server = server)
+
+#options=list(display.mode = "showcase")
 
 #runGitHub( "CELLDEX_shiny_map", "dmcostello")

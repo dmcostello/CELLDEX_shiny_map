@@ -1,3 +1,7 @@
+#Adapted from SuperZip example https://shiny.rstudio.com/gallery/superzip-example.html
+#https://github.com/rstudio/shiny-examples/tree/main/063-superzip-example
+
+
 library(shiny)
 library(leafem)
 
@@ -77,6 +81,8 @@ acerdat2 <- cbind(acerdat,conddat,kd)
 pred1<-predict(fgbm, newdata=acerdat2, n.trees=best.iter2)
 
 
-#JUNK CODE
+#Run app online
+library(rsconnect)
+rsconnect::deployApp('~/Library/CloudStorage/OneDrive-KentStateUniversity/Research projects/2020 CELLDEX spatial analysis/Shiny map/')
   
 
