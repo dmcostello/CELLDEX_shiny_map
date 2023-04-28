@@ -75,3 +75,8 @@ conddat <- data.frame(mesh.size.category=1,Leaf.condition=1)
 kd <- data.frame(ln_pred_k=4)
 acerdat2 <- cbind(acerdat,conddat,kd)
 pred1<-predict(fgbm, newdata=acerdat2, n.trees=best.iter2)
+
+
+#JUNK CODE
+  
+

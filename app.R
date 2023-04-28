@@ -27,11 +27,13 @@ FSsites <- mutate(FSsites, cntnt=paste0('<strong>Genus: </strong>',Genus,
 
 #Read in TRY trait data
 traits <- readRDS("./data/traits.rds")
+conddat <- data.frame(mesh.size.category=1,Leaf.condition=2) 
+  #Leaf condition dummy variables mesh: 1 = course, 2 = fine; condition: 1 = green, 2 = senesced
 
 #Color pallette
 pal <- colorNumeric(
   palette = "YlGn",
-  domain = values(skd)
+  domain = values(skd),na.color = NA
 )
 
 #Load models
@@ -48,23 +50,21 @@ ui <- navbarPage("CELLDEX",id="nav",
                             leafletOutput("map",width=600, height=800)),
                             sidebarPanel(
                               
-                              h3("Where do you want to go?"),
-                              numericInput("lat_in",label = "Latitude",min=-90,max=90,value=41.15),
+                              h4("Fly to"),
+                              numericInput("lat_in",label = "Latitude",min=-90,max=90,value=41.15,),
                               numericInput("lng_in",label = "Longitude",min=-180,max=180,value=-81.36),
                               br(),
                               
-                              h3("Show sites with decomp data"),
-                              radioButtons("sites",label="",
+                             radioButtons("sites",label="Show sites",
                                            choices=list("None","Cotton","Leaf litter","Both"),
                                            selected = "Cotton",
                               ),
                               
                               br(),
-                              h3("Click the map to predict decomp"),
-                              
-                              radioButtons("type",label="Predict decomposition rate of",
-                                           choices = list("Cotton","Leaf litter")),
-                              conditionalPanel("input.type == 'Leaf litter'",
+                              h4("Click the map to predict decomp"),
+                              radioButtons("predk",label="Predict decomposition rate of",
+                                           choices = list("Nothing","Cotton","Leaf litter")),
+                              conditionalPanel("input.predk == 'Leaf litter'",
                                                # Only prompt for litter type when selecting litter
                                                selectInput("leaf",label="Leaf genus",choices=as.list(
                                                  traits$Genus))),
@@ -74,7 +74,7 @@ ui <- navbarPage("CELLDEX",id="nav",
                               h4("You clicked:"),
                               textOutput("click_lat"),
                               textOutput("click_lng"),
-                              textOutput("kd")
+                              textOutput("click_k")
                             )
                           )
           ),
@@ -83,7 +83,8 @@ ui <- navbarPage("CELLDEX",id="nav",
            h1("Sliders here for environmental data"),
            plotOutput("test1",width = 300,height=400)),
   tabPanel("Substrate data",
-           h1("Sliders here for leaf traits"))
+           h1("Sliders here for leaf traits"),
+           dataTableOutput("leaftrait"))
   )
                  
 
@@ -98,7 +99,7 @@ server <- function(input, output, session) {
       addGeoRaster(skd,autozoom=F,layerId = 'rkd',
                    colorOptions = colorOptions(palette="YlGn"),opacity = 0.65) %>% 
       addLegend("bottomright", pal = pal, values = values(skd),
-                title = "k (1/d)",opacity = 0.65) %>%
+                title = "Cotton k (1/d)",opacity = 0.65) %>%
     setView(lng = input$lng_in, lat = input$lat_in, zoom = 6) %>% 
       setMaxBounds(~-180, ~-75, ~180, ~75)
   })
@@ -111,9 +112,10 @@ server <- function(input, output, session) {
                               color = "#1b9e77",
                               radius = 3, popup = ~as.character(cntnt),
                               stroke = FALSE, fillOpacity = 0.8)
-  }
+  } else
   if(input$sites=="None")
-  {proxy %>% clearMarkers()}
+  {proxy %>% clearMarkers()
+    } else
   
   if(input$sites=="Leaf litter")
   {proxy %>% clearMarkers()
@@ -121,7 +123,7 @@ server <- function(input, output, session) {
                               color = "firebrick",
                               radius = 3, popup = ~as.character(cntnt),
                               stroke = FALSE, fillOpacity = 0.8)
-    }
+    } else
   if(input$sites=="Both")
   {proxy %>% clearMarkers()
     proxy %>% addCircleMarkers(data = Csites, lat =  ~latitude, lng =~longitude,
@@ -136,11 +138,12 @@ server <- function(input, output, session) {
   
   })
   
+  #Practice plot from model
   output$test1 <- renderPlot({summary(fgbm,n.trees=best.iter2)
   })
   
-
-  #Output from rasters
+    #OUTPUT FROM RASTERS
+  
   output$click_lat <- renderText({paste("Latitude: ",ifelse(is.null(input$map_click$lat),"N/A",
                                         round(input$map_click$lat,digits=3)))})
   output$click_lng <- renderText({paste("Longitude: ",ifelse(is.null(input$map_click$lat),"N/A",
@@ -148,16 +151,48 @@ server <- function(input, output, session) {
   
   #updateNumericInput(inputID="lat_in",value=input$map_click$lat)
   
-output$kd <- renderText({paste("Predicted cotton kd = ",
-                               ifelse(is.null(input$map_click$lat),"N/A",round(
-                     raster::extract(x=skd,
-                                     y=data.frame(long=input$map_click$lng,lat=input$map_click$lat))
-                   ,digits=3))
-)
-})
+  output$click_k <- renderText({
+    if(input$predk=="Nothing"){"Nothing here"
+      } else
+    if(input$predk=="Leaf litter")
+      {paste("Predicted",input$leaf,"k (1/d) =",round(digits=3,
+      exp(predict(fgbm, n.trees=best.iter2,
+              newdata=cbind(traits[traits$Genus==input$leaf,],
+                            mesh.size.category=1,Leaf.condition=1,
+                            ln_pred_k=log(raster::extract(x=skd,y=data.frame(long=input$map_click$lng,lat=input$map_click$lat))))
+             )))
+      )
+    } else
+    if(input$predk=="Cotton"){
+      paste("Predicted cotton k (1/d) = ",
+            ifelse(is.null(input$map_click$lat),"N/A",round(digits=3,
+          raster::extract(x=skd,y=data.frame(long=input$map_click$lng,lat=input$map_click$lat))
+            ))
+      )
+    }   
+  })
+  
+  
+  #output$leaftrait  <- renderTable({
+    
+    #cbind(traits[traits$Genus==input$leaf,],conddat,data.frame(lk_pred_k=log(click_ck)))
+    
+  #})
+  
+  
+#output$kd <- renderText({paste("Predicted cotton kd = ",
+#                               ifelse(is.null(input$map_click$lat),"N/A",deparse(traitIn[1]))
+#)
+#})
 
 }
 
+#paste("Predicted cotton kd = ",
+ #     ifelse(is.null(input$map_click$lat),"N/A",round(
+#        raster::extract(x=skd,
+#                        y=data.frame(long=input$map_click$lng,lat=input$map_click$lat))
+#        ,digits=3))
+#)
 # Run the application 
 shinyApp(ui = ui, server = server,options=list(display.mode = "showcase"))
 
