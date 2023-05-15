@@ -53,12 +53,7 @@ ui <- navbarPage("CELLDEX",id="nav",
                               numericInput("lat_in",label = "Latitude",min=-90,max=90,value=41.15,),
                               numericInput("lng_in",label = "Longitude",min=-180,max=180,value=-81.36),
                               br(),
-                              
-                             radioButtons("sites",label="Show sites",
-                                           choices=list("None","Cotton","Leaf litter","Both"),
-                                           selected = "Cotton",
-                              ),
-                              
+                            
                               br(),
                               h4("Click the map to predict decomp"),
                               radioButtons("predk",label="Predict decomposition rate of",
@@ -100,43 +95,24 @@ server <- function(input, output, session) {
       addLegend("bottomright", pal = pal, values = values(skd),
                 title = "Cotton k (1/d)",opacity = 0.65) %>%
     setView(lng = input$lng_in, lat = input$lat_in, zoom = 6) %>% 
-      setMaxBounds(~-180, ~-75, ~180, ~75)
+      setMaxBounds(~-180, ~-75, ~180, ~75) %>%
+    
+    addCircleMarkers(data = Csites, lat =  ~latitude, lng =~longitude,
+                     color = "#1b9e77",radius = 3, 
+                     popup = ~as.character(cntnt),stroke = FALSE, fillOpacity = 0.8,
+                     group="Cotton (green)") %>%
+    
+    addCircleMarkers(data = FSsites, lat =  ~Latitude.2, lng =~Longitude.2,
+                     color = "firebrick",radius = 3, 
+                     popup = ~as.character(cntnt),stroke = FALSE, fillOpacity = 0.8,
+                     group="Litter (red)") %>%
+    
+    addLayersControl(
+      overlayGroups=c("Cotton (green)","Litter (red)"),
+      options = layersControlOptions(collapsed=F))
   })
   
-  #Turn on and off points where decay was measured
-  observe({proxy <- leafletProxy("map")
-  if(input$sites=="Cotton")
-  {proxy %>% clearMarkers()
-    proxy %>% addCircleMarkers(data = Csites, lat =  ~latitude, lng =~longitude,
-                              color = "#1b9e77",
-                              radius = 3, popup = ~as.character(cntnt),
-                              stroke = FALSE, fillOpacity = 0.8)
-  } else
-  if(input$sites=="None")
-  {proxy %>% clearMarkers()
-    } else
-  
-  if(input$sites=="Leaf litter")
-  {proxy %>% clearMarkers()
-    proxy %>% addCircleMarkers(data = FSsites, lat =  ~Latitude.2, lng =~Longitude.2,
-                              color = "firebrick",
-                              radius = 3, popup = ~as.character(cntnt),
-                              stroke = FALSE, fillOpacity = 0.8)
-    } else
-  if(input$sites=="Both")
-  {proxy %>% clearMarkers()
-    proxy %>% addCircleMarkers(data = Csites, lat =  ~latitude, lng =~longitude,
-                               color = "#1b9e77",
-                               radius = 3, popup = ~as.character(cntnt),
-                               stroke = FALSE, fillOpacity = 0.8)
-    proxy %>% addCircleMarkers(data = FSsites, lat =  ~Latitude.2, lng =~Longitude.2,
-                               color = "firebrick",
-                               radius = 3, popup = ~as.character(cntnt),
-                               stroke = FALSE, fillOpacity = 0.8)
-  }
-  
-  })
-  
+
   #Practice plot from model
   output$test1 <- renderPlot({summary(fgbm,n.trees=best.iter2)
   })

@@ -86,3 +86,42 @@ library(rsconnect)
 rsconnect::deployApp('~/Library/CloudStorage/OneDrive-KentStateUniversity/Research projects/2020 CELLDEX spatial analysis/CELLDEX map/')
   
 
+## OLD CODE for turing on/off cotton and litter - now within leaflet
+# #Turn on and off points where decay was measured
+# observe({proxy <- leafletProxy("map")
+# if(input$sites=="Cotton")
+# {proxy %>% clearMarkers()
+#   proxy %>% addCircleMarkers(data = Csites, lat =  ~latitude, lng =~longitude,
+#                             color = "#1b9e77",
+#                             radius = 3, popup = ~as.character(cntnt),
+#                             stroke = FALSE, fillOpacity = 0.8)
+# } else
+# if(input$sites=="None")
+# {proxy %>% clearMarkers()
+#   } else
+# 
+# if(input$sites=="Leaf litter")
+# {proxy %>% clearMarkers()
+#   proxy %>% addCircleMarkers(data = FSsites, lat =  ~Latitude.2, lng =~Longitude.2,
+#                             color = "firebrick",
+#                             radius = 3, popup = ~as.character(cntnt),
+#                             stroke = FALSE, fillOpacity = 0.8)
+#   } else
+# if(input$sites=="Both")
+# {proxy %>% clearMarkers()
+#   proxy %>% addCircleMarkers(data = Csites, lat =  ~latitude, lng =~longitude,
+#                              color = "#1b9e77",
+#                              radius = 3, popup = ~as.character(cntnt),
+#                              stroke = FALSE, fillOpacity = 0.8)
+#   proxy %>% addCircleMarkers(data = FSsites, lat =  ~Latitude.2, lng =~Longitude.2,
+#                              color = "firebrick",
+#                              radius = 3, popup = ~as.character(cntnt),
+#                              stroke = FALSE, fillOpacity = 0.8)
+# }
+# 
+# })
+# 
+#radioButtons("sites",label="Show sites",
+#choices=list("None","Cotton","Leaf litter","Both"),
+#selected = "Cotton",
+#),
