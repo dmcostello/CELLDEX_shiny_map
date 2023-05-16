@@ -26,8 +26,6 @@ FSsites <- mutate(FSsites, cntnt=paste0('<strong>Genus: </strong>',Genus,
 
 #Read in TRY trait data
 traits <- readRDS("./data/traits.rds")
-conddat <- data.frame(mesh.size.category=1,Leaf.condition=2) 
-  #Leaf condition dummy variables mesh: 1 = course, 2 = fine; condition: 1 = green, 2 = senesced
 
 #Color pallette
 pal <- colorNumeric(
@@ -44,34 +42,39 @@ best.iter2 <- gbm.perf(fgbm,method="cv")
 
 ui <- navbarPage("CELLDEX",id="nav",
                  tabPanel("Interactive map",
-                          sidebarLayout(
-                            mainPanel("",
-                            leafletOutput("map",width=600, height=800)),
-                            sidebarPanel(
-                              
+                          fluidPage(title="Click the map to predict decomp",
+                            leafletOutput("map",height = 500)),
+                            hr(),
+                          fluidRow(
+                              column(3,
                               h4("Fly to"),
                               numericInput("lat_in",label = "Latitude",min=-90,max=90,value=41.15,),
-                              numericInput("lng_in",label = "Longitude",min=-180,max=180,value=-81.36),
-                              br(),
-                            
-                              br(),
-                              h4("Click the map to predict decomp"),
+                              numericInput("lng_in",label = "Longitude",min=-180,max=180,value=-81.36)
+                              ),
+                              
+                              column(6,
                               radioButtons("predk",label="Predict decomposition rate of",
-                                           choices = list("Nothing","Cotton","Leaf litter")),
+                                           choices = list("Nothing","Cotton","Leaf litter"),inline=T),
                               conditionalPanel("input.predk == 'Leaf litter'",
                                                # Only prompt for litter type when selecting litter
-                                               selectInput("leaf",label="Leaf genus",choices=as.list(
+                                               column(4,
+                                                 selectInput("leaf",label="Leaf genus",choices=as.list(
                                                  traits$Genus))),
-                              
-                              br(),
-                              
-                              h4("You clicked:"),
+                                               column(4,radioButtons("cond",label="Leaf condition",
+                                                                     choices=list("senesced","green"))),
+                                               column(4,radioButtons("mesh",label="Mesh size",
+                                                                     choices=list("coarse","fine"))),
+                              )
+                              ),
+                              column(3,
+                                     h4("You clicked:"),
                               textOutput("click_lat"),
                               textOutput("click_lng"),
                               textOutput("click_k")
                             )
                           )
-          ),
+),
+
                       
   tabPanel("Environmental data",
            h1("Sliders here for environmental data"),
@@ -130,10 +133,13 @@ server <- function(input, output, session) {
     if(input$predk=="Nothing"){"Nothing here"
       } else
     if(input$predk=="Leaf litter")
-      {paste("Predicted",input$leaf,"k (1/d) =",round(digits=3,
+      {if(is.nan(raster::extract(x=skd,y=data.frame(long=input$map_click$lng,lat=input$map_click$lat)))){"NA"} else
+      
+      paste("Predicted",input$leaf,"k (1/d) =",round(digits=3,
       exp(predict(fgbm, n.trees=best.iter2,
               newdata=cbind(traits[traits$Genus==input$leaf,],
-                            mesh.size.category=1,Leaf.condition=1,
+                            mesh.size.category=factor(input$mesh),
+                            Leaf.condition=factor(input$cond),
                             ln_pred_k=log(raster::extract(x=skd,y=data.frame(long=input$map_click$lng,lat=input$map_click$lat))))
              )))
       )

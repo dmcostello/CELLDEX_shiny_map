@@ -75,10 +75,16 @@ best.iter2 <- gbm.perf(fgbm,method="cv")
 
 #Create a datasheet with the variables
 acerdat <- traits[traits$Genus=="Acer",]
-conddat <- data.frame(mesh.size.category=1,Leaf.condition=1)
-kd <- data.frame(ln_pred_k=4)
+conddat <- data.frame(mesh.size.category=1,Leaf.condition=2)
+kd <- data.frame(ln_pred_k=-5.5)
 acerdat2 <- cbind(acerdat,conddat,kd)
-pred1<-predict(fgbm, newdata=acerdat2, n.trees=best.iter2)
+(pred1<-exp(predict(fgbm, newdata=acerdat2, n.trees=best.iter2)))
+
+conddat <- data.frame(mesh.size.category=0,Leaf.condition=0)
+kd <- data.frame(ln_pred_k=-5.5)
+trait_mean <- t(colMeans(traits[,2:22]))
+meandat <- cbind(trait_mean,conddat,kd)
+predict(fgbm, newdata=meandat, n.trees=best.iter2)
 
 
 #Run app online
