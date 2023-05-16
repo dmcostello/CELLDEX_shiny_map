@@ -75,10 +75,16 @@ best.iter2 <- gbm.perf(fgbm,method="cv")
 
 #Create a datasheet with the variables
 acerdat <- traits[traits$Genus=="Acer",]
-conddat <- data.frame(mesh.size.category=1,Leaf.condition=1)
-kd <- data.frame(ln_pred_k=4)
+conddat <- data.frame(mesh.size.category=1,Leaf.condition=2)
+kd <- data.frame(ln_pred_k=-5.5)
 acerdat2 <- cbind(acerdat,conddat,kd)
-pred1<-predict(fgbm, newdata=acerdat2, n.trees=best.iter2)
+(pred1<-exp(predict(fgbm, newdata=acerdat2, n.trees=best.iter2)))
+
+conddat <- data.frame(mesh.size.category=0,Leaf.condition=0)
+kd <- data.frame(ln_pred_k=-5.5)
+trait_mean <- t(colMeans(traits[,2:22]))
+meandat <- cbind(trait_mean,conddat,kd)
+predict(fgbm, newdata=meandat, n.trees=best.iter2)
 
 
 #Run app online
@@ -86,3 +92,42 @@ library(rsconnect)
 rsconnect::deployApp('~/Library/CloudStorage/OneDrive-KentStateUniversity/Research projects/2020 CELLDEX spatial analysis/CELLDEX map/')
   
 
+## OLD CODE for turing on/off cotton and litter - now within leaflet
+# #Turn on and off points where decay was measured
+# observe({proxy <- leafletProxy("map")
+# if(input$sites=="Cotton")
+# {proxy %>% clearMarkers()
+#   proxy %>% addCircleMarkers(data = Csites, lat =  ~latitude, lng =~longitude,
+#                             color = "#1b9e77",
+#                             radius = 3, popup = ~as.character(cntnt),
+#                             stroke = FALSE, fillOpacity = 0.8)
+# } else
+# if(input$sites=="None")
+# {proxy %>% clearMarkers()
+#   } else
+# 
+# if(input$sites=="Leaf litter")
+# {proxy %>% clearMarkers()
+#   proxy %>% addCircleMarkers(data = FSsites, lat =  ~Latitude.2, lng =~Longitude.2,
+#                             color = "firebrick",
+#                             radius = 3, popup = ~as.character(cntnt),
+#                             stroke = FALSE, fillOpacity = 0.8)
+#   } else
+# if(input$sites=="Both")
+# {proxy %>% clearMarkers()
+#   proxy %>% addCircleMarkers(data = Csites, lat =  ~latitude, lng =~longitude,
+#                              color = "#1b9e77",
+#                              radius = 3, popup = ~as.character(cntnt),
+#                              stroke = FALSE, fillOpacity = 0.8)
+#   proxy %>% addCircleMarkers(data = FSsites, lat =  ~Latitude.2, lng =~Longitude.2,
+#                              color = "firebrick",
+#                              radius = 3, popup = ~as.character(cntnt),
+#                              stroke = FALSE, fillOpacity = 0.8)
+# }
+# 
+# })
+# 
+#radioButtons("sites",label="Show sites",
+#choices=list("None","Cotton","Leaf litter","Both"),
+#selected = "Cotton",
+#),
