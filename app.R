@@ -4,6 +4,7 @@
 library(shiny)
 library(leaflet)
 library(leafem)
+library(leaflet.extras)
 library(dplyr)
 library(gbm)
 library(raster)
@@ -53,8 +54,8 @@ ui <- navbarPage("CELLDEX",id="nav",
                               ),
                               
                               column(6,
-                              radioButtons("predk",label="Predict decomposition rate of",
-                                           choices = list("Nothing","Cotton","Leaf litter"),inline=T),
+                              radioButtons("predk",label="Predict point decomposition rate for",
+                                           choices = list("Cotton","Leaf litter"),inline=T),
                               conditionalPanel("input.predk == 'Leaf litter'",
                                                # Only prompt for litter type when selecting litter
                                                column(4,
@@ -76,9 +77,10 @@ ui <- navbarPage("CELLDEX",id="nav",
 ),
 
                       
-  tabPanel("Environmental data",
-           h1("Sliders here for environmental data"),
-           plotOutput("test1",width = 300,height=400)),
+  tabPanel("Shape output",
+           h1("Create a shape on the map to predict decomp"),
+           plotOutput("test1",width = 400,height=400),
+           dataTableOutput("shape_summary")),
   tabPanel("Substrate data",
            h1("Sliders here for leaf traits"),
            dataTableOutput("leaftrait"))
@@ -110,15 +112,41 @@ server <- function(input, output, session) {
                      popup = ~as.character(cntnt),stroke = FALSE, fillOpacity = 0.8,
                      group="Litter (red)") %>%
     
-    addLayersControl(
-      overlayGroups=c("Cotton (green)","Litter (red)"),
+      addDrawToolbar(targetGroup = "select area",
+                     position = "topleft",polylineOptions = F,markerOptions = F,
+                     circleMarkerOptions = F,singleFeature = T,
+                     editOptions = editToolbarOptions(
+                       selectedPathOptions = selectedPathOptions())) %>%
+      
+      addLayersControl(
+      overlayGroups=c("Cotton (green)","Litter (red)","select area"),
       options = layersControlOptions(collapsed=F))
+    
   })
   
+  user_shape <- reactive(eval(input$map_draw_new_feature$properties$feature_type[[1]]))
+  user_coord <- reactive(matrix(unlist(input$map_draw_new_feature$geometry$coordinates[[1]]),byrow = T,ncol=2))
+  user_shape_kd <- reactive(raster::extract(x=skd,y=spPolygons(user_coord())))
+  
+  #Old observers to check shape output
+  #observeEvent(input$map_draw_new_feature,{print(user_shape())})
+  #observeEvent(input$map_draw_new_feature,{print(user_coord())})
 
+
+  
+  
   #Practice plot from model
-  output$test1 <- renderPlot({summary(fgbm,n.trees=best.iter2)
+  output$test1 <- renderPlot({
+    req(input$map_draw_new_feature)
+    polykd_den <- density(unlist(user_shape_kd()),na.rm=T)
+    with(polykd_den,plot(x,y,type="l",las=1,col="green3",lwd=2,
+                         ylab="Relative frequency",xlab="Decomp. rate (1/d)"))
+    
+    #hist(unlist(user_shape_kd()),xlab="Kd (1/d)",
+         #main=paste0("Cotton (cells = ",length(unlist(user_shape_kd())),")"),las=1)
   })
+  
+  #output$test1 <- renderPlot({summary(fgbm,n.trees=best.iter2)})
   
     #OUTPUT FROM RASTERS
   
@@ -130,8 +158,7 @@ server <- function(input, output, session) {
   #updateNumericInput(inputID="lat_in",value=input$map_click$lat)
   
   output$click_k <- renderText({
-    if(input$predk=="Nothing"){"Nothing here"
-      } else
+    req(input$map_click)
     if(input$predk=="Leaf litter")
       {if(is.nan(raster::extract(x=skd,y=data.frame(long=input$map_click$lng,lat=input$map_click$lat)))){"NA"} else
       
