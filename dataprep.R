@@ -4,6 +4,7 @@
 
 library(shiny)
 library(leafem)
+library(leaflet.extras)
 
 #Load in datasets
 field <- read.csv("./data/field_clean.csv")
@@ -36,7 +37,7 @@ pal <- colorNumeric(
   domain = values(skd)
 )
 
- leaflet(Csites) %>% 
+ leaflet(elementId = "map") %>% 
     addProviderTiles(providers$Esri.WorldTopoMap) %>%
         addGeoRaster(skd,autozoom=F,
                  colorOptions = colorOptions(palette="YlGn"),opacity = 0.8,
@@ -45,6 +46,11 @@ pal <- colorNumeric(
                      color = "#1b9e77",
                      radius = 3, popup = ~as.character(cntnt),
                      stroke = FALSE, fillOpacity = 1) %>%
+   addDrawToolbar(targetGroup = "select area",
+                  position = "topleft",polylineOptions = F,markerOptions = F,
+                  circleMarkerOptions = F,singleFeature = T,
+                  editOptions = editToolbarOptions(
+                    selectedPathOptions = selectedPathOptions())) %>%
     addLegend("bottomright", pal = pal, values = values(skd),
               title = "k (1/d)",opacity = 1) %>%
      setView(lng = -81.36, lat = 41.15, zoom = 6) %>%
@@ -58,8 +64,29 @@ pal <- colorNumeric(
  coord<- data.frame(long=c(-84.9),lat=c(42.77))
  raster::extract(x=skd,y=coord)
  
+ #Example of rectangle extract
+ user_shape = "rectangle"
+ user_coord = matrix(c(-87.21814, 40.69151,
+                       -87.21814, 43.15974,
+                       -79.23580, 43.15974,
+                       -79.23580, 40.69151,
+                       -87.21814, 40.69151),ncol=2,byrow = T)
+ user_buffer = 41000
+ 
+ polykd <- raster::extract(x=skd,y=spPolygons(user_coord))
+ (circkd <- raster::extract(x=skd,y=coord,buffer=41000))
+ 
+ 
+hist(unlist(polykd),las=1,freq=F)
 
- #AGGREGATE TRAITS
+polykd_den <- density(unlist(polykd),na.rm=T)
+with(polykd_den,plot(x,y,type="l",las=1,col="green3",lwd=2,
+                     ylab="Relative frequency",xlab="Decomp. rate (1/d)"))
+  
+unlist(polykd) %>% mean(na.rm=T) %>% round(3)
+sum(!is.nan(unlist(polykd)))
+ 
+#AGGREGATE TRAITS
  CPdat <- read.csv("./data/AnalysisData_landcat_nocastaneav2.csv")
  traits<-aggregate(CPdat[,13:33],by=list(CPdat$Genus),mean)
  names(traits)[1] <- "Genus"

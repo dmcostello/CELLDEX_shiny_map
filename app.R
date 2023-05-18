@@ -78,9 +78,12 @@ ui <- navbarPage("CELLDEX",id="nav",
 
                       
   tabPanel("Shape output",
-           h1("Create a shape on the map to predict decomp"),
+           h2("Create a shape on the map to predict decomp"),
            plotOutput("test1",width = 400,height=400),
-           dataTableOutput("shape_summary")),
+           h4("Cotton summary statistics"),
+           textOutput("shape_mean"),
+           textOutput("shape_sd"),
+           textOutput("shape_n")),
   tabPanel("Substrate data",
            h1("Sliders here for leaf traits"),
            dataTableOutput("leaftrait"))
@@ -124,18 +127,39 @@ server <- function(input, output, session) {
     
   })
   
+  #Extract coordinated of shape drawn by user. What is extracted depends on the shape
   user_shape <- reactive(eval(input$map_draw_new_feature$properties$feature_type[[1]]))
-  user_coord <- reactive(matrix(unlist(input$map_draw_new_feature$geometry$coordinates[[1]]),byrow = T,ncol=2))
-  user_shape_kd <- reactive(raster::extract(x=skd,y=spPolygons(user_coord())))
+  
+  user_coord <- reactive(
+    if(user_shape()=="rectangle"){
+    matrix(unlist(input$map_draw_new_feature$geometry$coordinates[[1]]),byrow = T,ncol=2)}
+    else  if(user_shape()=="circle"){
+      matrix(unlist(input$map_draw_new_feature$geometry$coordinates),byrow = T,ncol=2)}
+    else if (user_shape()=="polygon"){
+      matrix(unlist(input$map_draw_new_feature$geometry$coordinates[[1]]),byrow = T,ncol=2)}
+  )
+  
+  user_buf <- reactive(unlist(input$map_draw_new_feature$properties$radius))
+  
+  user_shape_kd <- reactive(
+    if(user_shape()=="rectangle"){
+    raster::extract(x=skd,y=spPolygons(user_coord()))
+  } else
+    if(user_shape()=="circle"){
+      raster::extract(x=skd,y=user_coord(),buffer=user_buf())
+  } else
+    if(user_shape()=="polygon"){
+      raster::extract(x=skd,y=spPolygons(user_coord()))}
+  )
+  
   
   #Old observers to check shape output
   #observeEvent(input$map_draw_new_feature,{print(user_shape())})
   #observeEvent(input$map_draw_new_feature,{print(user_coord())})
-
-
+  #observeEvent(input$map_draw_new_feature,{print(user_buf())})
   
   
-  #Practice plot from model
+  #Generate output from shapes
   output$test1 <- renderPlot({
     req(input$map_draw_new_feature)
     polykd_den <- density(unlist(user_shape_kd()),na.rm=T)
@@ -146,9 +170,25 @@ server <- function(input, output, session) {
          #main=paste0("Cotton (cells = ",length(unlist(user_shape_kd())),")"),las=1)
   })
   
-  #output$test1 <- renderPlot({summary(fgbm,n.trees=best.iter2)})
-  
-    #OUTPUT FROM RASTERS
+  output$shape_mean <- renderText({
+    req(input$map_draw_new_feature)
+    paste0("Mean decay = ",unlist(user_shape_kd()) 
+           %>% mean(na.rm=T) 
+           %>% round(3))
+  })
+  output$shape_sd <- renderText({
+    req(input$map_draw_new_feature)
+    paste0("Standard deviation = ",unlist(user_shape_kd())
+           %>% sd(na.rm=T)
+           %>% round(3)
+    )
+  })
+  output$shape_n <- renderText({
+    req(input$map_draw_new_feature)
+    paste0("Cell count = ",sum(!is.nan(unlist(user_shape_kd()))))
+  })
+
+    #Point output from rasters
   
   output$click_lat <- renderText({paste("Latitude: ",ifelse(is.null(input$map_click$lat),"N/A",
                                         round(input$map_click$lat,digits=3)))})
