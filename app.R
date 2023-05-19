@@ -2,6 +2,7 @@
 
 
 library(shiny)
+library(shinyWidgets)
 library(leaflet)
 library(leafem)
 library(leaflet.extras)
@@ -78,15 +79,36 @@ ui <- navbarPage("CELLDEX",id="nav",
 
                       
   tabPanel("Shape output",
-           h2("Create a shape on the map to predict decomp"),
-           plotOutput("test1",width = 400,height=400),
-           h4("Cotton summary statistics"),
-           textOutput("shape_mean"),
-           textOutput("shape_sd"),
-           textOutput("shape_n")),
-  tabPanel("Substrate data",
-           h1("Sliders here for leaf traits"),
-           dataTableOutput("leaftrait"))
+           h2("Create a shape on the map to predict decomp for an area"),
+           fluidPage(fluidRow(
+             column(4,
+                    h4("Select 1 litter type"),
+                    dropdown(label="Select litter",tags$label("Choose :"),
+                                   fluidRow(
+                                     column(6,
+                    checkboxGroupInput("lit_shape_a", label=NULL,choices=as.list(
+                      traits$Genus[1:16]), selected = NULL)),
+                    column(6,
+                           checkboxGroupInput("lit_shape_b", label=NULL,choices=as.list(
+                             traits$Genus[17:31]), selected = NULL))
+                        )
+                    ),
+                    br(),
+                    textOutput("select_warn"),
+                    br(),
+                    actionButton("goshape", label="Calculate Kd", icon = NULL)
+                    ),
+             column(8,
+                     
+                     plotOutput("test1",width = 400,height=400),
+                     h4("Cotton summary statistics"),
+                     textOutput("shape_mean"),
+                     textOutput("shape_sd"),
+                     textOutput("shape_n"))))),
+           tabPanel("Substrate data",
+                    h1("Sliders here for leaf traits"),
+                    dataTableOutput("leaftrait"))
+           
   )
                  
 
@@ -159,13 +181,21 @@ server <- function(input, output, session) {
   #observeEvent(input$map_draw_new_feature,{print(user_buf())})
   
   
-  #Generate output from shapes
+  #Generate cotton output from shapes
   output$test1 <- renderPlot({
     req(input$map_draw_new_feature)
     polykd_den <- density(unlist(user_shape_kd()),na.rm=T)
+    if(length(lit_select())==0){
     with(polykd_den,plot(x,y,type="l",las=1,col="green3",lwd=2,
                          ylab="Relative frequency",xlab="Decomp. rate (1/d)"))
-    
+    } else
+      if(length(lit_select())==1){
+        req(input$goshape)
+        with(polykd_den,plot(x,y,type="l",las=1,col="green3",lwd=2,
+                             ylab="Relative frequency",xlab="Decomp. rate (1/d)"))
+        litkd_den <- density(litdat(),na.rm=T)
+        with(litkd_den,lines(x,y,col="red",lwd=2))
+      }
     #hist(unlist(user_shape_kd()),xlab="Kd (1/d)",
          #main=paste0("Cotton (cells = ",length(unlist(user_shape_kd())),")"),las=1)
   })
@@ -187,7 +217,38 @@ server <- function(input, output, session) {
     req(input$map_draw_new_feature)
     paste0("Cell count = ",sum(!is.nan(unlist(user_shape_kd()))))
   })
-
+  
+  #Generate litter output from shape and button input
+  
+  #Stitch together two columns if litter genera
+  lit_select <- reactive({
+    x <- c(input$lit_shape_a, input$lit_shape_b)
+  })
+  
+  #Warning of more than 1 litter types selected
+  warn3 <- eventReactive(input$goshape,{
+    ifelse(length(lit_select()) >1,
+           as.character("Please select only 1 litter type"),
+           as.character("")
+           )
+  })
+  
+  output$select_warn <- renderText({warn3()})
+  
+  #Reactives to create new data frame
+  litdat <- eventReactive(input$goshape,{
+    exp(predict(fgbm,n.trees=best.iter2,newdata=
+                           cbind(traits[traits$Genus==lit_select()[1],],
+                                 mesh.size.category=factor(input$mesh),
+                                 Leaf.condition=factor(input$cond),
+                                 ln_pred_k=log(unlist(user_shape_kd())))
+    ))
+ })
+ 
+  observeEvent(input$goshape,{str(litdat())})
+  
+  
+  
     #Point output from rasters
   
   output$click_lat <- renderText({paste("Latitude: ",ifelse(is.null(input$map_click$lat),"N/A",

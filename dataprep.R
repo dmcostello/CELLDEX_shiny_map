@@ -113,6 +113,26 @@ trait_mean <- t(colMeans(traits[,2:22]))
 meandat <- cbind(trait_mean,conddat,kd)
 predict(fgbm, newdata=meandat, n.trees=best.iter2)
 
+#Litter polygons
+kdpoly <- data.frame(ln_pred_k=log(unlist(polykd)))
+acerpoly <- cbind(kdpoly,acerdat,conddat)
+(pred2<-exp(predict(fgbm, newdata=acerpoly, n.trees=best.iter2)))
+
+lit <- c("Alnus","Carya")
+
+lit_dat_list <- list(kdpoly,kdpoly)
+names(lit_dat_list)<- lit
+
+dat<-data.frame(NULL)
+
+for(i in 1:length(lit)){
+  x<- cbind(kdpoly,
+    traits[traits$Genus==lit[i],],
+    conddat)
+  dat <- rbind(dat,x)
+}
+
+dat$predk <- exp(predict(fgbm,newdata=dat,n.trees=best.iter2))
 
 #Run app online
 library(rsconnect)
