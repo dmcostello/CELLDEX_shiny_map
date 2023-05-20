@@ -96,6 +96,11 @@ ui <- navbarPage("CELLDEX",id="nav",
                                     style = "color: steelblue"))
                     ),
                     
+                    br(),
+                    column(6,radioButtons("cond_shape",label="Leaf condition",
+                                          choices=list("senesced","green"))),
+                    column(6,radioButtons("mesh_shape",label="Mesh size",
+                                          choices=list("coarse","fine"))),
                     
                     br(),
                     textOutput("select_warn"),
@@ -112,10 +117,10 @@ ui <- navbarPage("CELLDEX",id="nav",
                     h4(textOutput("shape_head")),
                     textOutput("shape_lit_mean"),
                     textOutput("shape_lit_sd")
-                    )))),
-           tabPanel("Substrate data",
-                    h1("Sliders here for leaf traits"),
-                    dataTableOutput("leaftrait"))
+                    ))))
+           #,tabPanel("Substrate data",
+                    #h1("Sliders here for leaf traits"),
+                    #dataTableOutput("leaftrait"))
            
   )
                  
@@ -249,8 +254,8 @@ server <- function(input, output, session) {
   litdat <- reactive(
     exp(predict(fgbm,n.trees=best.iter2,newdata=
                            cbind(traits[traits$Genus==input$lit_select,],
-                                 mesh.size.category=factor(input$mesh),
-                                 Leaf.condition=factor(input$cond),
+                                 mesh.size.category=factor(input$mesh_shape),
+                                 Leaf.condition=factor(input$cond_shape),
                                  ln_pred_k=log(unlist(user_shape_kd())))
     ))
  )
