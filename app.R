@@ -2,8 +2,10 @@
 
 
 library(shiny)
+library(shinyWidgets)
 library(leaflet)
 library(leafem)
+library(leaflet.extras)
 library(dplyr)
 library(gbm)
 library(raster)
@@ -53,8 +55,8 @@ ui <- navbarPage("CELLDEX",id="nav",
                               ),
                               
                               column(6,
-                              radioButtons("predk",label="Predict decomposition rate of",
-                                           choices = list("Nothing","Cotton","Leaf litter"),inline=T),
+                              radioButtons("predk",label="Predict point decomposition rate for",
+                                           choices = list("Cotton","Leaf litter"),inline=T),
                               conditionalPanel("input.predk == 'Leaf litter'",
                                                # Only prompt for litter type when selecting litter
                                                column(4,
@@ -76,12 +78,45 @@ ui <- navbarPage("CELLDEX",id="nav",
 ),
 
                       
-  tabPanel("Environmental data",
-           h1("Sliders here for environmental data"),
-           plotOutput("test1",width = 300,height=400)),
-  tabPanel("Substrate data",
-           h1("Sliders here for leaf traits"),
-           dataTableOutput("leaftrait"))
+  tabPanel("Shape output",
+           h2("Create a shape on the map to predict decomp for an area"),
+           fluidPage(fluidRow(
+             column(5,
+                    
+                    h4("Select 1 litter type"),
+                    radioGroupButtons(
+                      inputId = "lit_select",
+                      label = "",
+                      choices = as.list(c("None",traits$Genus)),
+                      individual = TRUE,
+                      checkIcon = list(
+                        yes = tags$i(class = "fa fa-circle", 
+                                     style = "color: steelblue"),
+                        no = tags$i(class = "fa fa-circle-o", 
+                                    style = "color: steelblue"))
+                    ),
+                    
+                    
+                    br(),
+                    textOutput("select_warn"),
+                    br()
+                    ),
+             column(7,
+                     
+                     plotOutput("test1",width = 400,height=400),
+                     h4("Cotton summary statistics"),
+                     textOutput("shape_mean"),
+                     textOutput("shape_sd"),
+                     textOutput("shape_n"),
+                    br(),
+                    h4(textOutput("shape_head")),
+                    textOutput("shape_lit_mean"),
+                    textOutput("shape_lit_sd")
+                    )))),
+           tabPanel("Substrate data",
+                    h1("Sliders here for leaf traits"),
+                    dataTableOutput("leaftrait"))
+           
   )
                  
 
@@ -110,17 +145,143 @@ server <- function(input, output, session) {
                      popup = ~as.character(cntnt),stroke = FALSE, fillOpacity = 0.8,
                      group="Litter (red)") %>%
     
-    addLayersControl(
-      overlayGroups=c("Cotton (green)","Litter (red)"),
+      addDrawToolbar(targetGroup = "select area",
+                     position = "topleft",polylineOptions = F,markerOptions = F,
+                     circleMarkerOptions = F,singleFeature = T,
+                     editOptions = editToolbarOptions(
+                       selectedPathOptions = selectedPathOptions())) %>%
+      
+      addLayersControl(
+      overlayGroups=c("Cotton (green)","Litter (red)","select area"),
       options = layersControlOptions(collapsed=F))
+    
   })
+  
+  #Extract coordinated of shape drawn by user. What is extracted depends on the shape
+  user_shape <- reactive(eval(input$map_draw_new_feature$properties$feature_type[[1]]))
+  
+  user_coord <- reactive(
+    if(user_shape()=="rectangle"){
+    matrix(unlist(input$map_draw_new_feature$geometry$coordinates[[1]]),byrow = T,ncol=2)}
+    else  if(user_shape()=="circle"){
+      matrix(unlist(input$map_draw_new_feature$geometry$coordinates),byrow = T,ncol=2)}
+    else if (user_shape()=="polygon"){
+      matrix(unlist(input$map_draw_new_feature$geometry$coordinates[[1]]),byrow = T,ncol=2)}
+  )
+  
+  user_buf <- reactive(unlist(input$map_draw_new_feature$properties$radius))
+  
+  user_shape_kd <- reactive(
+    if(user_shape()=="rectangle"){
+    raster::extract(x=skd,y=spPolygons(user_coord()))
+  } else
+    if(user_shape()=="circle"){
+      raster::extract(x=skd,y=user_coord(),buffer=user_buf())
+  } else
+    if(user_shape()=="polygon"){
+      raster::extract(x=skd,y=spPolygons(user_coord()))}
+  )
+  
+  
+  #Old observers to check shape output
+  #observeEvent(input$map_draw_new_feature,{print(user_shape())})
+  #observeEvent(input$map_draw_new_feature,{print(user_coord())})
+  #observeEvent(input$map_draw_new_feature,{print(user_buf())})
+  
+  
+  #Generate cotton output from shapes
+  output$test1 <- renderPlot({
+    req(input$map_draw_new_feature)
+    polykd_den <- density(unlist(user_shape_kd()),na.rm=T)
+        if(input$lit_select=="None"){
+    with(polykd_den,plot(x,y,type="l",las=1,col="green3",lwd=2,
+                         ylab="Relative frequency",xlab="Decomp. rate (1/d)"))
+    } else
+      if(length(input$lit_select!="None")){
+        litkd_den <- density(litdat(),na.rm=T)
+        xmax <- max(litdat(),unlist(user_shape_kd()),na.rm=T)
+        xmin <- min(litdat(),unlist(user_shape_kd()),na.rm=T)
+        ymax <- max(litkd_den$y,polykd_den$y)
+        with(polykd_den,plot(x,y,type="l",las=1,col="green3",lwd=2,
+                             ylab="Relative frequency",xlab="Decomp. rate (1/d)",
+                             xlim=c(xmin,xmax),ylim=c(0,ymax)))
+        legend("topright",legend=c("Cotton",input$lit_select),col=c("green3","red"),
+               lwd=2,text.col=c("green3","red"))
+        with(litkd_den,lines(x,y,col="red",lwd=2))
+      }
+    #hist(unlist(user_shape_kd()),xlab="Kd (1/d)",
+         #main=paste0("Cotton (cells = ",length(unlist(user_shape_kd())),")"),las=1)
+  })
+  
+  output$shape_mean <- renderText({
+    req(input$map_draw_new_feature)
+    paste0("Mean decay (1/d) = ",unlist(user_shape_kd()) 
+           %>% mean(na.rm=T) 
+           %>% round(3))
+  })
+  output$shape_sd <- renderText({
+    req(input$map_draw_new_feature)
+    paste0("Standard deviation = ",unlist(user_shape_kd())
+           %>% sd(na.rm=T)
+           %>% round(3)
+    )
+  })
+  output$shape_n <- renderText({
+    req(input$map_draw_new_feature)
+    paste0("Cell count = ",sum(!is.nan(unlist(user_shape_kd()))))
+  })
+  
+  #Generate litter output from shape and button input
   
 
-  #Practice plot from model
-  output$test1 <- renderPlot({summary(fgbm,n.trees=best.iter2)
+  
+  #Warning of more than 1 litter types selected
+  warn3 <- eventReactive(input$goshape,{
+    ifelse(length(input$lit_select) >1,
+           as.character("Please select only 1 litter type"),
+           as.character("")
+           )
   })
   
-    #OUTPUT FROM RASTERS
+  output$select_warn <- renderText({warn3()})
+  
+  #Reactives to create new data frame
+  litdat <- reactive(
+    exp(predict(fgbm,n.trees=best.iter2,newdata=
+                           cbind(traits[traits$Genus==input$lit_select,],
+                                 mesh.size.category=factor(input$mesh),
+                                 Leaf.condition=factor(input$cond),
+                                 ln_pred_k=log(unlist(user_shape_kd())))
+    ))
+ )
+ 
+  output$shape_head <- renderText({
+    if(input$lit_select!="None"){
+      paste(input$lit_select,"summary statistics")
+    }
+  })
+  
+  output$shape_lit_mean <- renderText({
+    if(input$lit_select!="None"){
+    paste0("Mean decay (1/d) = ",litdat() 
+           %>% mean(na.rm=T) 
+           %>% round(3))
+           }
+  })
+  
+  output$shape_lit_sd <- renderText({
+    if(input$lit_select!="None"){
+    paste0("Standard deviation = ",litdat()
+           %>% sd(na.rm=T)
+           %>% round(3))
+    }
+  })
+  
+  #observeEvent(input$goshape,{print(max(litdat()))})
+  
+  
+  
+    #Point output from rasters
   
   output$click_lat <- renderText({paste("Latitude: ",ifelse(is.null(input$map_click$lat),"N/A",
                                         round(input$map_click$lat,digits=3)))})
@@ -130,8 +291,7 @@ server <- function(input, output, session) {
   #updateNumericInput(inputID="lat_in",value=input$map_click$lat)
   
   output$click_k <- renderText({
-    if(input$predk=="Nothing"){"Nothing here"
-      } else
+    req(input$map_click)
     if(input$predk=="Leaf litter")
       {if(is.nan(raster::extract(x=skd,y=data.frame(long=input$map_click$lng,lat=input$map_click$lat)))){"NA"} else
       
