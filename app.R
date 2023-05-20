@@ -81,30 +81,38 @@ ui <- navbarPage("CELLDEX",id="nav",
   tabPanel("Shape output",
            h2("Create a shape on the map to predict decomp for an area"),
            fluidPage(fluidRow(
-             column(4,
+             column(5,
+                    
                     h4("Select 1 litter type"),
-                    dropdown(label="Select litter",tags$label("Choose :"),
-                                   fluidRow(
-                                     column(6,
-                    checkboxGroupInput("lit_shape_a", label=NULL,choices=as.list(
-                      traits$Genus[1:16]), selected = NULL)),
-                    column(6,
-                           checkboxGroupInput("lit_shape_b", label=NULL,choices=as.list(
-                             traits$Genus[17:31]), selected = NULL))
-                        )
+                    radioGroupButtons(
+                      inputId = "lit_select",
+                      label = "",
+                      choices = as.list(c("None",traits$Genus)),
+                      individual = TRUE,
+                      checkIcon = list(
+                        yes = tags$i(class = "fa fa-circle", 
+                                     style = "color: steelblue"),
+                        no = tags$i(class = "fa fa-circle-o", 
+                                    style = "color: steelblue"))
                     ),
+                    
+                    
                     br(),
                     textOutput("select_warn"),
-                    br(),
-                    actionButton("goshape", label="Calculate Kd", icon = NULL)
+                    br()
                     ),
-             column(8,
+             column(7,
                      
                      plotOutput("test1",width = 400,height=400),
                      h4("Cotton summary statistics"),
                      textOutput("shape_mean"),
                      textOutput("shape_sd"),
-                     textOutput("shape_n"))))),
+                     textOutput("shape_n"),
+                    br(),
+                    h4(textOutput("shape_head")),
+                    textOutput("shape_lit_mean"),
+                    textOutput("shape_lit_sd")
+                    )))),
            tabPanel("Substrate data",
                     h1("Sliders here for leaf traits"),
                     dataTableOutput("leaftrait"))
@@ -185,15 +193,20 @@ server <- function(input, output, session) {
   output$test1 <- renderPlot({
     req(input$map_draw_new_feature)
     polykd_den <- density(unlist(user_shape_kd()),na.rm=T)
-    if(length(lit_select())==0){
+        if(input$lit_select=="None"){
     with(polykd_den,plot(x,y,type="l",las=1,col="green3",lwd=2,
                          ylab="Relative frequency",xlab="Decomp. rate (1/d)"))
     } else
-      if(length(lit_select())==1){
-        req(input$goshape)
-        with(polykd_den,plot(x,y,type="l",las=1,col="green3",lwd=2,
-                             ylab="Relative frequency",xlab="Decomp. rate (1/d)"))
+      if(length(input$lit_select!="None")){
         litkd_den <- density(litdat(),na.rm=T)
+        xmax <- max(litdat(),unlist(user_shape_kd()),na.rm=T)
+        xmin <- min(litdat(),unlist(user_shape_kd()),na.rm=T)
+        ymax <- max(litkd_den$y,polykd_den$y)
+        with(polykd_den,plot(x,y,type="l",las=1,col="green3",lwd=2,
+                             ylab="Relative frequency",xlab="Decomp. rate (1/d)",
+                             xlim=c(xmin,xmax),ylim=c(0,ymax)))
+        legend("topright",legend=c("Cotton",input$lit_select),col=c("green3","red"),
+               lwd=2,text.col=c("green3","red"))
         with(litkd_den,lines(x,y,col="red",lwd=2))
       }
     #hist(unlist(user_shape_kd()),xlab="Kd (1/d)",
@@ -202,7 +215,7 @@ server <- function(input, output, session) {
   
   output$shape_mean <- renderText({
     req(input$map_draw_new_feature)
-    paste0("Mean decay = ",unlist(user_shape_kd()) 
+    paste0("Mean decay (1/d) = ",unlist(user_shape_kd()) 
            %>% mean(na.rm=T) 
            %>% round(3))
   })
@@ -220,14 +233,11 @@ server <- function(input, output, session) {
   
   #Generate litter output from shape and button input
   
-  #Stitch together two columns if litter genera
-  lit_select <- reactive({
-    x <- c(input$lit_shape_a, input$lit_shape_b)
-  })
+
   
   #Warning of more than 1 litter types selected
   warn3 <- eventReactive(input$goshape,{
-    ifelse(length(lit_select()) >1,
+    ifelse(length(input$lit_select) >1,
            as.character("Please select only 1 litter type"),
            as.character("")
            )
@@ -236,16 +246,38 @@ server <- function(input, output, session) {
   output$select_warn <- renderText({warn3()})
   
   #Reactives to create new data frame
-  litdat <- eventReactive(input$goshape,{
+  litdat <- reactive(
     exp(predict(fgbm,n.trees=best.iter2,newdata=
-                           cbind(traits[traits$Genus==lit_select()[1],],
+                           cbind(traits[traits$Genus==input$lit_select,],
                                  mesh.size.category=factor(input$mesh),
                                  Leaf.condition=factor(input$cond),
                                  ln_pred_k=log(unlist(user_shape_kd())))
     ))
- })
+ )
  
-  observeEvent(input$goshape,{str(litdat())})
+  output$shape_head <- renderText({
+    if(input$lit_select!="None"){
+      paste(input$lit_select,"summary statistics")
+    }
+  })
+  
+  output$shape_lit_mean <- renderText({
+    if(input$lit_select!="None"){
+    paste0("Mean decay (1/d) = ",litdat() 
+           %>% mean(na.rm=T) 
+           %>% round(3))
+           }
+  })
+  
+  output$shape_lit_sd <- renderText({
+    if(input$lit_select!="None"){
+    paste0("Standard deviation = ",litdat()
+           %>% sd(na.rm=T)
+           %>% round(3))
+    }
+  })
+  
+  #observeEvent(input$goshape,{print(max(litdat()))})
   
   
   

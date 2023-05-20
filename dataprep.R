@@ -177,4 +177,28 @@ rsconnect::deployApp('~/Library/CloudStorage/OneDrive-KentStateUniversity/Resear
 #radioButtons("sites",label="Show sites",
 #choices=list("None","Cotton","Leaf litter","Both"),
 #selected = "Cotton",
+
+
+#Old code attempting to plot multiple litter types on one density plot
+#UI
+dropdown(label="Select litter",tags$label("Choose :"),
+         fluidRow(
+           column(6,
+                  checkboxGroupInput("lit_shape_a", label=NULL,choices=as.list(
+                    traits$Genus[1:16]), selected = NULL)),
+           column(6,
+                  checkboxGroupInput("lit_shape_b", label=NULL,choices=as.list(
+                    traits$Genus[17:31]), selected = NULL))
+         )
+),
+
+actionButton("goshape", label="Calculate Kd", icon = NULL)
+),
+
+#SERVER
+#Stitch together two columns if litter genera
+lit_select <- reactive({
+  x <- c(input$lit_shape_a, input$lit_shape_b)
+})
+
 #),
