@@ -134,6 +134,58 @@ for(i in 1:length(lit)){
 
 dat$predk <- exp(predict(fgbm,newdata=dat,n.trees=best.iter2))
 
+#PINE BARK BEETLE
+#From Gonzalez-Hernandez 2020 Modelling potential distribution of a pine bark beetle in Mexican 
+#temperate forests using forecast data and spatial analysis tools
+
+pine <- read.csv("pine_hucs.csv")
+summary(pine)
+pine$beetle <- factor(pine$beetle)
+  #1 = moderate to high risk of invasion, 0 = low to no risk of invasion
+names(pine)[2:3] <- c("Long","Lat")
+
+leaflet(elementId = "map") %>% 
+  addProviderTiles(providers$Esri.WorldTopoMap) %>%
+  addCircleMarkers(data = pine[pine$beetle=="0",], lat =  ~Lat, lng =~Long,
+                   color = "#1b9e77",
+                   radius = 3, stroke = FALSE, fillOpacity = 1) %>%
+  addCircleMarkers(data = pine[pine$beetle=="1",], lat =  ~Lat, lng =~Long,
+                   color = "orangered",
+                   radius = 3, stroke = FALSE, fillOpacity = 1) %>%
+  addLegend("topright",colors = c("#1b9e77","orangered"),
+            labels=c("No-Low","Moderate-High"),opacity=1,title ="Risk of invasion")
+
+#Predict decay
+Mex_cot <- log(raster::extract(x=skd,y=pine[pine$beetle=="1",2:3]))
+
+oakdat <- traits[traits$Genus=="Quercus",]
+pinedat <- traits[traits$Genus=="Pinus",]
+
+conddat <- data.frame(mesh.size.category="coarse",Leaf.condition="senesced")
+
+oakdat2 <- cbind(oakdat,conddat,ln_pred_k=Mex_cot)
+pinedat2 <- cbind(pinedat,conddat,ln_pred_k=Mex_cot)
+
+Mex_oak<-exp(predict(fgbm, newdata=oakdat2, n.trees=best.iter2))
+Mex_pine<-exp(predict(fgbm, newdata=pinedat2, n.trees=best.iter2))
+
+#Calculate empirical density
+den_oak <- density(Mex_oak,na.rm=T)
+den_pine <- density(Mex_pine,na.rm=T)
+
+#Plotting
+with(den_oak,plot(x,y,type="l",lwd=4,col="goldenrod2",lty=3,xlim=c(0.002,0.02),
+                  las=1,ylim=c(0,500),yaxt="n",
+                  ylab="",xlab="Decomp. rate (1/d)",cex.lab=1.5))
+mtext("Relative frequency",side=2,line=1,cex=1.5)
+with(den_pine,lines(x,y,lwd=4,col="forestgreen"))
+legend("topright",cex=1.2,
+       legend=c(substitute(paste(italic("Pinus"))),
+                           substitute(paste(italic("Quercus")))),
+       lwd=4,lty=c(1,3),
+       col=c("forestgreen","goldenrod2"),text.col = c("forestgreen","goldenrod2"))
+
+  
 #Run app online
 library(rsconnect)
 rsconnect::deployApp('~/Library/CloudStorage/OneDrive-KentStateUniversity/Research projects/2020 CELLDEX spatial analysis/CELLDEX map/')
