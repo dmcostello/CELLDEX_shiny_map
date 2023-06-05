@@ -117,12 +117,47 @@ ui <- navbarPage("CELLDEX",id="nav",
                     h4(textOutput("shape_head")),
                     textOutput("shape_lit_mean"),
                     textOutput("shape_lit_sd")
-                    ))))
-           #,tabPanel("Substrate data",
-                    #h1("Sliders here for leaf traits"),
-                    #dataTableOutput("leaftrait"))
-           
-  )
+                    )))),
+tabPanel("More info",
+         h1("CELLDEX Geospatial Decomposition Predictor"),
+         br(),
+         p("Welcome to the CELLulose Decomposition EXperiment (CELLDEX) geospatial tool for predicting cotton and litter decomposition in stream ecosystems.
+           This Shiny app was developed to allow users to predict cellulose and leaf litter decay rates in streams across the globe.
+           The predictive model is build from boosted regression trees (BRT) that predict cotton decay rates from watershed variables provided by HydroSHEDS.
+           The model results are validate by natural litter bag decay rates using cotton and genus-level litter traits."),
+         br(),
+         h3("Getting started"),
+         p("Click anywhere on the", strong("Interactive Map"), "to see point estimates of cotton decay rates.
+           If you select the Leaf litter radio button, you can pick a litter genus and experimental condition to predict litter bag decay rates."),
+         p("Use the tools on the map to select an area of interest. 
+           Then click the",strong("Shape output"),"tab to see summary statistics and a kernel density plot of cotton decay in the selected area.
+           Select a leaf litter genus to see estimated decay for natural litter in the selected area."),
+         br(),
+         h3("Other resources"),
+         h4("CELLDEX papers"),
+         p("Tiegs et al. 2019 Global patterns and drivers of ecosystem functioning in rivers and riparian zones.",
+           em("Science Advances"),
+           a("pdf",href="https://www.science.org/doi/epdf/10.1126/sciadv.aav0486")),
+         p("Costello et al. 2022 Global patterns and controls of nutrient immobilization on decomposing cellulose in riverine ecosystems.",
+           em("Global Biogeochemical Cycles"),
+           a("pdf",href="https://agupubs.onlinelibrary.wiley.com/doi/am-pdf/10.1029/2021GB007163")),
+         
+         h4("Cotton strips"),
+         p("Tiegs et al. 2013 A standardized cotton-strip assay for measuring organic-matter decomposition in streams.",
+           em("Ecological Indicators"),
+           a("pdf",href="https://www.researchgate.net/profile/Scott-Tiegs/publication/257593011_A_standardized_cotton-strip_assay_for_measuring_organic-matter_decomposition_in_streams/links/5c0e6e1292851c39ebe26605/A-standardized-cotton-strip-assay-for-measuring-organic-matter-decomposition-in-streams.pdf")),
+         
+         h4("Data sources"),
+         p(a("HydroSHEDS",href="https://www.hydrosheds.org")),
+         p(a("TRY Plant trait database",href="https://www.try-db.org/TryWeb/Home.php")),
+         p("Follstad Shah et al. 2017 Global synthesis of the temperature sensitivity of leaf litter breakdown in streams and rivers.",
+           em("Global Change Biology"),
+           a("pdf",href="https://onlinelibrary.wiley.com/doi/epdf/10.1111/gcb.13609")),
+         p("LeRoy et al. 2020 Plant phylogenetic history explains in‐stream decomposition at a global scale.",
+           em("Journal of Ecology"),
+           a("pdf",href="https://besjournals.onlinelibrary.wiley.com/doi/pdf/10.1111/1365-2745.13262")),
+         
+  ))
                  
 
 #### --- SERVER LOGIC --- ####
