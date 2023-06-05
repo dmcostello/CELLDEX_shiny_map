@@ -133,6 +133,13 @@ tabPanel("More info",
            Then click the",strong("Shape output"),"tab to see summary statistics and a kernel density plot of cotton decay in the selected area.
            Select a leaf litter genus to see estimated decay for natural litter in the selected area."),
          br(),
+         h4("How to cite this resource"),
+         p("Costello DM, JP Schmidt, KA Capps, CJ Patrick, and SD Tiegs. 2023. CELLDEX Geospatial Decomposition Predictor.",
+           
+           a(href="https://zenodo.org/badge/latestdoi/621003485","DOI: 10.5281/zenodo.8008082")
+             
+         ),
+         br(),
          h3("Other resources"),
          h4("CELLDEX papers"),
          p("Tiegs et al. 2019 Global patterns and drivers of ecosystem functioning in rivers and riparian zones.",
