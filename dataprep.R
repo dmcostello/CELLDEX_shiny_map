@@ -11,6 +11,11 @@ field <- read.csv("./data/field_clean.csv")
 field$part.str <- paste(field$partnerid,field$stream)
 skd<-readRDS('./data/skd.rds')
 ln_skd <- readRDS('./data/ln_skd.rds')
+
+#Read in TRY trait data
+traits <- readRDS("./data/traits.rds")
+
+
 Csites <- readRDS('./data/CELLDEX.rds')
 #Creates the html strings for map click
 Csites <- mutate(Csites, cntnt=paste0('<strong>Site code: </strong>',part.str,
@@ -173,8 +178,9 @@ Mex_pine<-exp(predict(fgbm, newdata=pinedat2, n.trees=best.iter2))
 den_oak <- density(Mex_oak,na.rm=T)
 den_pine <- density(Mex_pine,na.rm=T)
 
-#Plotting
-with(den_oak,plot(x,y,type="l",lwd=4,col="goldenrod2",lty=3,xlim=c(0.002,0.02),
+#Plotting (Or use color goldenrod2)
+
+with(den_oak,plot(x,y,type="l",lwd=4,col="orangered",lty=3,xlim=c(0.002,0.02),
                   las=1,ylim=c(0,500),yaxt="n",
                   ylab="",xlab="Decomp. rate (1/d)",cex.lab=1.5))
 mtext("Relative frequency",side=2,line=1,cex=1.5)
@@ -183,7 +189,7 @@ legend("topright",cex=1.2,
        legend=c(substitute(paste(italic("Pinus"))),
                            substitute(paste(italic("Quercus")))),
        lwd=4,lty=c(1,3),
-       col=c("forestgreen","goldenrod2"),text.col = c("forestgreen","goldenrod2"))
+       col=c("forestgreen","orangered"),text.col = c("forestgreen","orangered"))
 
   
 #Run app online
