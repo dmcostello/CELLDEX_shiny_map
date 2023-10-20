@@ -1,6 +1,5 @@
 #### --- GLOBAL --- ####
 
-
 library(shiny)
 library(shinyWidgets)
 library(leaflet)
@@ -11,20 +10,19 @@ library(gbm)
 library(raster)
 library(stars)
 
-#Read in CELLDEX data
+# Read in CELLDEX data
 Csites <- readRDS('./data/CELLDEX.rds')
   #Creates the html strings for map click
 Csites <- mutate(Csites, cntnt=paste0('<strong>Site code: </strong>',part.str,
-                                      '<br><strong>Biome:</strong> ', biome_short.y,
+                                      '<br><strong>Biome:</strong> ', biome_short,
                                       '<br><strong>Decay rate (1/d):</strong> ', round(k,digits=3))) 
 skd<-readRDS('./data/skd.rds')
-ln_skd <- readRDS('./data/ln_skd.rds')
 
-#Read in the Follstad-Shah 2017 data
-FSsites <- readRDS("./data/FSdat.rds")
-FSsites <- mutate(FSsites, cntnt=paste0('<strong>Genus: </strong>',Genus,
+#Read in the LeRoy 2020 dataset
+LITsites <- readRDS("./data/litter.rds")
+LITsites <- mutate(LITsites, cntnt=paste0('<strong>Genus: </strong>',Genus,
                                       '<br><strong>Leaf condition:</strong> ', Leaf.condition,
-                                      '<br><strong>Decay rate (1/d):</strong> ', round(kd,digits=3))) 
+                                      '<br><strong>Mean decomp rate (1/d):</strong> ', round(mean_kd,digits=3))) 
 
 #Read in TRY trait data
 traits <- readRDS("./data/traits.rds")
@@ -36,9 +34,9 @@ pal <- colorNumeric(
 )
 
 #Load models
-load("FSmodel.rda")  
+load("litter_mod.rda")  
 
-best.iter2 <- gbm.perf(fgbm,method="cv")
+best.iter2 <- 49948 #From CELLDEX geospatial
 
 #### --- USER INTERFACE --- ####
 
@@ -187,7 +185,7 @@ server <- function(input, output, session) {
                      popup = ~as.character(cntnt),stroke = FALSE, fillOpacity = 0.8,
                      group="Cotton (green)") %>%
     
-    addCircleMarkers(data = FSsites, lat =  ~Latitude.2, lng =~Longitude.2,
+    addCircleMarkers(data = LITsites, lat =  ~latitude, lng =~longitude,
                      color = "firebrick",radius = 3, 
                      popup = ~as.character(cntnt),stroke = FALSE, fillOpacity = 0.8,
                      group="Litter (red)") %>%
@@ -294,9 +292,9 @@ server <- function(input, output, session) {
   
   #Reactives to create new data frame
   litdat <- reactive(
-    exp(predict(fgbm,n.trees=best.iter2,newdata=
+    exp(predict(Fgbm,n.trees=best.iter2,newdata=
                            cbind(traits[traits$Genus==input$lit_select,],
-                                 mesh.size.category=factor(input$mesh_shape),
+                                 Mesh.size=factor(input$mesh_shape),
                                  Leaf.condition=factor(input$cond_shape),
                                  ln_pred_k=log(unlist(user_shape_kd())))
     ))
@@ -343,9 +341,9 @@ server <- function(input, output, session) {
       {if(is.nan(raster::extract(x=skd,y=data.frame(long=input$map_click$lng,lat=input$map_click$lat)))){"NA"} else
       
       paste("Predicted",input$leaf,"k (1/d) =",round(digits=3,
-      exp(predict(fgbm, n.trees=best.iter2,
+      exp(predict(Fgbm, n.trees=best.iter2,
               newdata=cbind(traits[traits$Genus==input$leaf,],
-                            mesh.size.category=factor(input$mesh),
+                            Mesh.size=factor(input$mesh),
                             Leaf.condition=factor(input$cond),
                             ln_pred_k=log(raster::extract(x=skd,y=data.frame(long=input$map_click$lng,lat=input$map_click$lat))))
              )))

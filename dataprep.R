@@ -6,6 +6,15 @@ library(shiny)
 library(leafem)
 library(leaflet.extras)
 
+
+
+# All datafiles are now saved in the CELLDEXgeo BRT code
+# See repository at https://github.com/dmcostello/CELLDEX_geospatial
+saveRDS(CELLDEX,file="~/Desktop/CELLDEX.rds")
+saveRDS(global_kd,file="~/Desktop/skd.rds")
+
+## OLD DATA CREATION CODE ##
+
 #Load in datasets
 field <- read.csv("./data/field_clean.csv")
 field$part.str <- paste(field$partnerid,field$stream)
