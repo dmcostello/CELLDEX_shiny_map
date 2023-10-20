@@ -8,7 +8,8 @@ library(leaflet.extras)
 
 ### NOTES ON NEW FIXES ###
 # Change the content on the CELLDEX pop-up. Currently just has numerical code for partner
-
+# Change the "more info" tab to point to CELLDEX geo paper? and repository
+# Add the pine bark beetle code to the CELLDEX geo repository
 
 
 
