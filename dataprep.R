@@ -6,6 +6,10 @@ library(shiny)
 library(leafem)
 library(leaflet.extras)
 
+### NOTES ON NEW FIXES ###
+# Change the content on the CELLDEX pop-up. Currently just has numerical code for partner
+
+
 
 
 # All datafiles are now saved in the CELLDEXgeo BRT code
@@ -203,7 +207,7 @@ legend("topright",cex=1.2,
   
 #Run app online
 library(rsconnect)
-rsconnect::deployApp('~/Library/CloudStorage/OneDrive-KentStateUniversity/Research projects/2020 CELLDEX spatial analysis/CELLDEX map/')
+rsconnect::deployApp('~/Desktop/GitHub projects/CELLDEX_shiny_map')
   
 
 ## OLD CODE for turing on/off cotton and litter - now within leaflet
