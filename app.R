@@ -13,7 +13,7 @@ library(stars)
 # Read in CELLDEX data
 Csites <- readRDS('./data/CELLDEX.rds')
   #Creates the html strings for map click
-Csites <- mutate(Csites, cntnt=paste0('<strong>Site code: </strong>',part.str,
+Csites <- mutate(Csites, cntnt=paste0('<strong>CELLDEX </strong>',
                                       '<br><strong>Biome:</strong> ', biome_short,
                                       '<br><strong>Decay rate (1/d):</strong> ', round(k,digits=3))) 
 skd<-readRDS('./data/skd.rds')
@@ -22,6 +22,7 @@ skd<-readRDS('./data/skd.rds')
 LITsites <- readRDS("./data/litter.rds")
 LITsites <- mutate(LITsites, cntnt=paste0('<strong>Genus: </strong>',Genus,
                                       '<br><strong>Leaf condition:</strong> ', Leaf.condition,
+                                      '<br><strong>Mesh:</strong> ', Mesh.size,
                                       '<br><strong>Mean decomp rate (1/d):</strong> ', round(mean_kd,digits=3))) 
 
 #Read in TRY trait data
@@ -131,7 +132,7 @@ tabPanel("More info",
            Then click the",strong("Shape output"),"tab to see summary statistics and a kernel density plot of cotton decay in the selected area.
            Select a leaf litter genus to see estimated decay for natural litter in the selected area."),
          br(),
-         h4("How to cite this resource"),
+         h3("How to cite this resource"),
          p("Costello DM, JP Schmidt, KA Capps, CJ Patrick, and SD Tiegs. 2023. CELLDEX Geospatial Decomposition Predictor.",
            
            a(href="https://zenodo.org/badge/latestdoi/621003485","DOI: 10.5281/zenodo.8008082")
@@ -152,7 +153,13 @@ tabPanel("More info",
            em("Ecological Indicators"),
            a("pdf",href="https://www.researchgate.net/profile/Scott-Tiegs/publication/257593011_A_standardized_cotton-strip_assay_for_measuring_organic-matter_decomposition_in_streams/links/5c0e6e1292851c39ebe26605/A-standardized-cotton-strip-assay-for-measuring-organic-matter-decomposition-in-streams.pdf")),
          
-         h4("Data sources"),
+         h4("CELLDEX data repositories"),
+         p("CELLDEX Geospatial model",
+           a("GitHub",href="https://github.com/dmcostello/CELLDEX_geospatial")),
+         p("CELLDEX cotton decomposition data",
+           a("GitHub",href="https://github.com/dmcostello/CELLDEX2018")),
+         
+         h4("Other data sources"),
          p(a("HydroSHEDS",href="https://www.hydrosheds.org")),
          p(a("TRY Plant trait database",href="https://www.try-db.org/TryWeb/Home.php")),
          p("Follstad Shah et al. 2017 Global synthesis of the temperature sensitivity of leaf litter breakdown in streams and rivers.",
