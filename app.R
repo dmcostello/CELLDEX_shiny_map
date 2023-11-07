@@ -266,6 +266,9 @@ server <- function(input, output, session) {
   })
   
   output$shape_mean <- renderText({
+    validate(
+      need(input$map_draw_new_feature !="","Please select an area on the map")
+    )
     req(input$map_draw_new_feature)
     paste0("Mean decay (1/d) = ",unlist(user_shape_kd()) 
            %>% mean(na.rm=T) 
@@ -315,6 +318,10 @@ server <- function(input, output, session) {
   
   output$shape_lit_mean <- renderText({
     if(input$lit_select!="None"){
+      validate(
+        need(input$map_draw_new_feature !="","Please select an area on the map")
+      )
+      req(input$map_draw_new_feature)
     paste0("Mean decay (1/d) = ",litdat() 
            %>% mean(na.rm=T) 
            %>% round(3))
@@ -323,6 +330,7 @@ server <- function(input, output, session) {
   
   output$shape_lit_sd <- renderText({
     if(input$lit_select!="None"){
+      req(input$map_draw_new_feature)
     paste0("Standard deviation = ",litdat()
            %>% sd(na.rm=T)
            %>% round(3))
