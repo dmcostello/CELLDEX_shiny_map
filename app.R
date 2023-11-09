@@ -210,20 +210,28 @@ server <- function(input, output, session) {
   })
   
   #Extract coordinated of shape drawn by user. What is extracted depends on the shape
-  user_shape <- reactive(eval(input$map_draw_new_feature$properties$feature_type[[1]]))
+  user_shape <- reactive({
+    req(input$map_draw_new_feature)
+    eval(input$map_draw_new_feature$properties$feature_type[[1]])
+    })
   
-  user_coord <- reactive(
+  user_coord <- reactive({
+    req(input$map_draw_new_feature)
     if(user_shape()=="rectangle"){
     matrix(unlist(input$map_draw_new_feature$geometry$coordinates[[1]]),byrow = T,ncol=2)}
     else  if(user_shape()=="circle"){
       matrix(unlist(input$map_draw_new_feature$geometry$coordinates),byrow = T,ncol=2)}
     else if (user_shape()=="polygon"){
       matrix(unlist(input$map_draw_new_feature$geometry$coordinates[[1]]),byrow = T,ncol=2)}
-  )
+  })
   
-  user_buf <- reactive(unlist(input$map_draw_new_feature$properties$radius))
+  user_buf <- reactive({
+    req(input$map_draw_new_feature)
+    unlist(input$map_draw_new_feature$properties$radius)
+  })
   
-  user_shape_kd <- reactive(
+  user_shape_kd <- reactive({
+    req(input$map_draw_new_feature)
     if(user_shape()=="rectangle"){
     raster::extract(x=skd,y=spPolygons(user_coord()))
   } else
@@ -232,7 +240,7 @@ server <- function(input, output, session) {
   } else
     if(user_shape()=="polygon"){
       raster::extract(x=skd,y=spPolygons(user_coord()))}
-  )
+    })
   
   
   #Old observers to check shape output
@@ -375,7 +383,7 @@ server <- function(input, output, session) {
   
 }
 # Run the application 
-shinyApp(ui = ui, server = server)
+shinyApp(ui = ui, server = server,options=list(display.mode = "showcase"))
 
 #options=list(display.mode = "showcase")
 
