@@ -23,7 +23,8 @@ LITsites <- readRDS("./data/litter.rds")
 LITsites <- mutate(LITsites, cntnt=paste0('<strong>Genus: </strong>',Genus,
                                       '<br><strong>Leaf condition:</strong> ', Leaf.condition,
                                       '<br><strong>Mesh:</strong> ', Mesh.size,
-                                      '<br><strong>Mean decomp rate (1/d):</strong> ', round(mean_kd,digits=3))) 
+                                      '<br><strong>Mean decomp rate (1/d):</strong> ', round(mean_kd,digits=3),
+                                      '<br>',Citation)) 
 
 #Read in TRY trait data
 traits <- readRDS("./data/traits.rds")
@@ -383,7 +384,7 @@ server <- function(input, output, session) {
   
 }
 # Run the application 
-shinyApp(ui = ui, server = server,options=list(display.mode = "showcase"))
+shinyApp(ui = ui, server = server)
 
 #options=list(display.mode = "showcase")
 
