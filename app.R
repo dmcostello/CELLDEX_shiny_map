@@ -17,6 +17,7 @@ Csites <- mutate(Csites, cntnt=paste0('<strong>CELLDEX </strong>',
                                       '<br><strong>Biome:</strong> ', biome_short,
                                       '<br><strong>Decay rate (1/d):</strong> ', round(k,digits=3))) 
 skd<-readRDS('./data/skd.rds')
+crs(skd) <- CRS("+init=epsg:4326")
 
 #Read in the LeRoy 2020 dataset
 LITsites <- readRDS("./data/litter.rds")
