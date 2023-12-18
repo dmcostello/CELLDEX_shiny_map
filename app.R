@@ -202,6 +202,7 @@ server <- function(input, output, session) {
       addDrawToolbar(targetGroup = "select area",
                      position = "topleft",polylineOptions = F,markerOptions = F,
                      circleMarkerOptions = F,singleFeature = T,
+                     circleOptions = F, #Turned off circles because wasn't working on ShinyServer
                      editOptions = editToolbarOptions(
                        selectedPathOptions = selectedPathOptions())) %>%
       
@@ -221,25 +222,25 @@ server <- function(input, output, session) {
     req(input$map_draw_new_feature)
     if(user_shape()=="rectangle"){
     matrix(unlist(input$map_draw_new_feature$geometry$coordinates[[1]]),byrow = T,ncol=2)}
-    else  if(user_shape()=="circle"){
-      matrix(unlist(input$map_draw_new_feature$geometry$coordinates),byrow = T,ncol=2)}
+    #else  if(user_shape()=="circle"){
+    #  matrix(unlist(input$map_draw_new_feature$geometry$coordinates),byrow = T,ncol=2)}
     else if (user_shape()=="polygon"){
       matrix(unlist(input$map_draw_new_feature$geometry$coordinates[[1]]),byrow = T,ncol=2)}
   })
   
-  user_buf <- reactive({
-    req(input$map_draw_new_feature)
-    unlist(input$map_draw_new_feature$properties$radius)
-  })
+  #user_buf <- reactive({
+  #  req(input$map_draw_new_feature)
+  #  unlist(input$map_draw_new_feature$properties$radius)
+  #})
   
   user_shape_kd <- reactive({
     req(input$map_draw_new_feature)
     if(user_shape()=="rectangle"){
     raster::extract(x=skd,y=spPolygons(user_coord()))
   } else
-    if(user_shape()=="circle"){
-      raster::extract(x=skd,y=user_coord(),buffer=user_buf())
-  } else
+    #if(user_shape()=="circle"){
+    #  raster::extract(x=skd,y=user_coord(),buffer=user_buf())
+  #} else
     if(user_shape()=="polygon"){
       raster::extract(x=skd,y=spPolygons(user_coord()))}
     })
