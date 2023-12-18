@@ -79,12 +79,12 @@ ui <- navbarPage("CELLDEX",id="nav",
 ),
 
                       
-  tabPanel("Shape output",
+  tabPanel("Areal decomp prediction",
            h2("Create a shape on the map to predict decomp for an area"),
            fluidPage(fluidRow(
              column(5,
                     
-                    h4("Select 1 litter type"),
+                    h4("Select a litter type"),
                     radioGroupButtons(
                       inputId = "lit_select",
                       label = "",
