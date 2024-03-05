@@ -44,7 +44,7 @@ best.iter2 <- 49948 #From CELLDEX geospatial
 #### --- USER INTERFACE --- ####
 
 ui <- navbarPage("CELLDEX",id="nav",
-                 tags$head(includeHTML("google-analytics.html")),
+                 tags$head(includeHTML("google_analytics.html")),
                  tabPanel("Interactive map",
                           fluidPage(title="Click the map to predict decomp",
                             leafletOutput("map",height = 500)),
